@@ -1,0 +1,348 @@
+// =====================================================================
+//  CANCIONES.JS  ·  La pantalla «Canciones»
+//  Aquí está todo lo que ves al entrar a Canciones: el buscador, los
+//  álbumes (agrupados por artista), las canciones de cada álbum, el
+//  orden (manual, A-Z, Z-A) y el botón «Vista».
+//
+//  MAPA DE ESTE ARCHIVO (usa Ctrl+F para encontrar cada parte):
+//   1. ESTILOS .............. colores y tamaños de esta pantalla
+//   2. PREFERENCIAS ......... lo que recuerda cada dispositivo
+//   3. ORDEN ................ ordenar(), guardarOrden(), moverUno()
+//   4. AGRUPAR POR ARTISTA .. gruposDeAlbumes()
+//   5. DIBUJAR .............. barra, menú «Vista», álbumes, canciones
+//   6. ACCIONES ............. qué pasa al hacer clic
+//   7. ARRASTRAR Y SOLTAR ... orden manual con el mouse
+//   8. FORMULARIOS .......... ventanitas para álbum y artista
+//   9. ARRANQUE ............. cómo se conecta con el resto de la app
+// =====================================================================
+import {$,esc,guardar,crear,eliminar,imagen,vistas,ic,modal} from "./base.js";
+import {E,alCambiar} from "./estado.js";
+import {abrir,editando,forzarCierre} from "./editor.js";
+import {etiquetas} from "./etiquetas.js";
+
+// ---------------------------------------------------------------------
+// 1. ESTILOS de esta pantalla
+// ---------------------------------------------------------------------
+const hoja=document.createElement('style');
+hoja.textContent=`.lst{display:grid;gap:8px}
+.fila2{display:flex;align-items:center;gap:12px;background:#fff;border-radius:12px;padding:8px 52px 8px 8px;cursor:pointer;position:relative;box-shadow:0 1px 6px #1f2a4d14}
+.fila2:hover{box-shadow:0 4px 14px #1f2a4d26}.fila2 .mini{width:44px;height:44px;border-radius:8px;background:#e1e6f2 center/cover;display:grid;place-items:center;flex:none}
+.fila2 b{flex:1;min-width:0;word-break:break-word}.fila2 details{top:50%;transform:translateY(-50%)}
+.buscar{position:relative;flex:1;min-width:200px}.buscar input{width:100%;padding-right:36px}
+.buscar .x{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:28px;height:28px;padding:0;border-radius:50%;background:transparent;color:#6b7390;font-size:20px;line-height:1}
+.vbox{position:relative}.vmenu{position:absolute;right:0;top:100%;z-index:12;background:#fff;border-radius:14px;box-shadow:0 8px 28px #0004;padding:12px;width:290px;margin-top:6px}
+.vmenu[hidden]{display:none}.vt{font-size:12px;font-weight:700;color:#6b7390;margin:10px 0 4px}.vt:first-child{margin-top:0}
+.vseg{display:flex;background:#e1e6f2;border-radius:10px;padding:3px;gap:2px}.vseg button{flex:1;background:transparent;color:#1F2A4D;padding:6px 4px;font-size:13px}.vseg button.on{background:#1F2A4D;color:#fff}
+.vchk{display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:600;font-size:14px}
+.grupo{margin-bottom:14px}.gh{display:flex;align-items:center;gap:8px;width:100%;background:none;color:#1F2A4D;padding:6px 2px;font-weight:700;font-size:15px;border-radius:6px;justify-content:flex-start}
+.gh:hover{background:#e9edf7;filter:none}.gh .chev{display:inline-flex;transition:transform .15s;color:#6b7390}.grupo.abierto .chev{transform:rotate(90deg)}
+.gc{color:#6b7390;font-weight:500}.gl{flex:1;height:1px;background:#c3cae0;margin-left:6px}div.gh{cursor:default}
+.ruta{display:flex;align-items:center;gap:10px;margin-bottom:12px}.ruta small{color:#6b7390}.vacio{color:#6b7390}
+.fl2{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b7390}
+.arrastrando{opacity:.4}.antes{box-shadow:-5px 0 0 #C58A2B!important}.despues{box-shadow:5px 0 0 #C58A2B!important}
+.lst .antes{box-shadow:0 -4px 0 #C58A2B!important}.lst .despues{box-shadow:0 4px 0 #C58A2B!important}`;
+document.head.append(hoja);
+
+// ---------------------------------------------------------------------
+// 2. PREFERENCIAS  (se guardan en este dispositivo, no en Firebase)
+// ---------------------------------------------------------------------
+const PREF={
+  vista:'cuadricula',        // 'cuadricula' o 'lista'
+  ordenAlbumes:'manual',     // 'manual', 'az' o 'za'
+  ordenCanciones:'manual',   // igual, para las canciones dentro de un álbum
+  agrupar:true,              // ¿agrupar los álbumes por artista?
+  plegados:[]                // grupos de artistas que están cerrados
+};
+try{
+  Object.assign(PREF,JSON.parse(localStorage.getItem('prefCanciones')||'{}'));
+  if(!localStorage.getItem('prefCanciones')&&localStorage.getItem('vistaCanciones')==='lista')PREF.vista='lista';   // recuerda la vista de la versión anterior
+}catch(e){}
+const guardarPreferencias=()=>{try{localStorage.setItem('prefCanciones',JSON.stringify(PREF))}catch(e){}};
+
+// ---------------------------------------------------------------------
+// Variables de lo que está pasando en pantalla
+// ---------------------------------------------------------------------
+let el=null;               // el contenedor de esta pantalla
+let albumAbierto=null;     // id del álbum que estás viendo (null = lista de álbumes)
+let busqueda='';           // texto del buscador
+let menuAbierto=false;     // ¿está abierto el menú «Vista»?
+let fotoPara=null;         // álbum al que se le está cambiando la foto
+let arrastre=null;         // lo que se está arrastrando ahora mismo
+let destino=null;          // dónde se va a soltar
+
+// ---------------------------------------------------------------------
+// 3. ORDEN
+// ---------------------------------------------------------------------
+const alfa=(a,b)=>a.localeCompare(b,'es',{sensitivity:'base'});   // compara dos textos ignorando mayúsculas y tildes
+
+// ordenar(lista, modo, texto): devuelve una copia de la lista ordenada.
+//   modo 'az' = de la A a la Z,  'za' = de la Z a la A,
+//   'manual' = según el campo «orden» (los que no lo tienen van al final, por nombre).
+function ordenar(lista,modo,texto){
+  const copia=[...lista],porNombre=(a,b)=>alfa(texto(a),texto(b));
+  if(modo==='az')return copia.sort(porNombre);
+  if(modo==='za')return copia.sort((a,b)=>porNombre(b,a));
+  return copia.sort((a,b)=>((a.orden??1e9)-(b.orden??1e9))||porNombre(a,b));
+}
+
+// guardarOrden: le pone a cada elemento su número de posición (0, 1, 2...) en Firebase.
+function guardarOrden(coleccion,lista){
+  lista.forEach((o,i)=>{if(o.orden!==i)guardar(coleccion,o.id,{orden:i})});
+}
+
+// Un «contenedor» es el grupo donde se reordena:  'alb:Artista'  o  'can:idDelAlbum'.
+function listaDelContenedor(cont){
+  if(cont.startsWith('alb:')){
+    const artista=cont.slice(4);
+    return ordenar(E.albumes.filter(a=>claveGrupo(a)===artista),'manual',a=>a.nombre);
+  }
+  const idAlbum=cont.slice(4);
+  return ordenar(E.canciones.filter(c=>c.albumId===idAlbum),'manual',c=>c.titulo);
+}
+
+// moverUno: sube (-1) o baja (+1) un elemento una posición.
+function moverUno(tipo,id,cont,paso){
+  const lista=listaDelContenedor(cont),i=lista.findIndex(x=>x.id===id),j=i+paso;
+  if(i<0||j<0||j>=lista.length)return;
+  const nueva=[...lista];[nueva[i],nueva[j]]=[nueva[j],nueva[i]];
+  guardarOrden(tipo==='album'?'albumes':'canciones',nueva);
+}
+
+// ---------------------------------------------------------------------
+// 4. AGRUPAR POR ARTISTA
+// ---------------------------------------------------------------------
+const artistaDe=a=>(a.artista||'').trim();
+const hayArtistas=()=>E.albumes.some(a=>artistaDe(a));
+const agrupando=()=>PREF.agrupar&&hayArtistas();          // si ningún álbum tiene artista, no se muestran grupos
+const claveGrupo=a=>agrupando()?artistaDe(a):'';          // en qué grupo está un álbum ('' = «Sin artista» o sin grupos)
+const listaDeArtistas=()=>[...new Set(E.albumes.map(artistaDe).filter(Boolean))].sort(alfa);
+
+// gruposDeAlbumes: devuelve [{nombre, albumes:[...]}]. nombre = null significa «sin encabezados».
+function gruposDeAlbumes(){
+  const modo=PREF.ordenAlbumes,texto=a=>a.nombre;
+  if(!agrupando())return [{nombre:null,albumes:ordenar(E.albumes,modo,texto)}];
+  const mapa=new Map();
+  E.albumes.forEach(a=>{const k=artistaDe(a);if(!mapa.has(k))mapa.set(k,[]);mapa.get(k).push(a)});
+  const nombres=[...mapa.keys()].filter(Boolean).sort(alfa);
+  if(modo==='za')nombres.reverse();
+  const grupos=nombres.map(n=>({nombre:n,albumes:ordenar(mapa.get(n),modo,texto)}));
+  if(mapa.has(''))grupos.push({nombre:'',albumes:ordenar(mapa.get(''),modo,texto)});   // «Sin artista» al final
+  return grupos;
+}
+
+// ---------------------------------------------------------------------
+// 5. DIBUJAR
+// ---------------------------------------------------------------------
+const fotoDe=alb=>alb&&alb.foto?`style="background-image:url(${alb.foto})"`:'';
+
+// menuDe: el menú ⋮ de cada álbum o canción.
+function menuDe(tipo,o,cont,manual){
+  const datos=`data-tipo="${tipo}" data-id="${o.id}" data-cont="${esc(cont)}"`;
+  const boton=(acc,texto,clase='')=>`<button class="${clase}" data-acc="${acc}" ${datos}>${texto}</button>`;
+  const deAlbum=tipo==='album'?boton('nombre','Editar nombre')+boton('artista','Editar artista')+boton('foto','Editar foto del \u00e1lbum'):'';
+  const mover=manual?boton('atras','Mover atr\u00e1s')+boton('adelante','Mover adelante'):'';
+  return `<details><summary>&#8942;</summary><div>${deAlbum}${mover}${boton('eliminar','Eliminar','rojo')}</div></details>`;
+}
+
+// item: dibuja UN álbum o UNA canción (como tarjeta o como fila, según la vista).
+function item(tipo,o,cont,arrastrable){
+  const esAlbum=tipo==='album',alb=esAlbum?o:E.albumes.find(a=>a.id===o.albumId);
+  const titulo=esAlbum?o.nombre:o.titulo,icono=alb&&alb.foto?'':(esAlbum?'\u{1F4C1}':'\u{1F3B5}');
+  const datos=`data-tipo="${tipo}" data-id="${o.id}" data-cont="${esc(cont)}" ${arrastrable?'draggable="true"':''}`;
+  const menu=menuDe(tipo,o,cont,arrastrable);
+  if(PREF.vista==='lista')return `<div class="fila2" ${datos}><div class="mini" ${fotoDe(alb)}>${icono}</div><b>${esc(titulo)}</b>${menu}</div>`;
+  return `<div class="card" ${datos}><div class="foto" ${fotoDe(alb)}>${icono}</div><b>${esc(titulo)}</b>${menu}</div>`;
+}
+
+const claseLista=(chica)=>PREF.vista==='lista'?'lst':'grid'+(chica?' chico':'');
+
+// htmlAlbumes: la lista de álbumes, con los grupos de artistas plegables.
+function htmlAlbumes(){
+  if(!E.albumes.length)return '<p class="vacio">A\u00fan no hay \u00e1lbumes. Pulsa \u00abNuevo \u00e1lbum\u00bb.</p>';
+  const manual=PREF.ordenAlbumes==='manual';
+  return gruposDeAlbumes().map(g=>{
+    const cont='alb:'+(g.nombre||''),filas=`<div class="${claseLista(false)}">${g.albumes.map(a=>item('album',a,cont,manual)).join('')}</div>`;
+    if(g.nombre===null)return filas;                                  // sin encabezados
+    const clave='a:'+g.nombre,plegado=PREF.plegados.includes(clave);
+    return `<section class="grupo ${plegado?'':'abierto'}"><button class="gh" data-grupo="${esc(clave)}"><span class="chev">${ic('rgt',16)}</span><span class="gn">${esc(g.nombre||'Sin artista')}</span><span class="gc">(${g.albumes.length})</span><span class="gl"></span></button>${plegado?'':filas}</section>`;
+  }).join('');
+}
+
+// htmlAlbum: las canciones de un álbum abierto.
+function htmlAlbum(alb){
+  const manual=PREF.ordenCanciones==='manual';
+  const canciones=ordenar(E.canciones.filter(c=>c.albumId===alb.id),PREF.ordenCanciones,c=>c.titulo);
+  return `<div class="ruta"><button class="sec" data-volver>${ic('lft',16)} \u00c1lbumes</button><span><b>${esc(alb.nombre)}</b>${artistaDe(alb)?` <small>\u00b7 ${esc(artistaDe(alb))}</small>`:''}</span></div>`
+    +(canciones.length?`<div class="${claseLista(true)}">${canciones.map(c=>item('cancion',c,'can:'+alb.id,manual)).join('')}</div>`:'<p class="vacio">Este \u00e1lbum a\u00fan no tiene canciones.</p>');
+}
+
+// coincide: ¿esta canción coincide con lo que escribiste en el buscador?
+function coincide(c,q){
+  const alb=E.albumes.find(a=>a.id===c.albumId);
+  const nombresEtiquetas=(c.etiquetas||[]).map(id=>(E.etiquetas.find(t=>t.id===id)||{}).nombre||'').join(' ');
+  return [c.titulo,c.letra||'',nombresEtiquetas,alb?alb.nombre:'',alb?artistaDe(alb):''].join(' ').toLowerCase().includes(q);
+}
+
+function htmlBusqueda(q){
+  const res=ordenar(E.canciones.filter(c=>coincide(c,q)),PREF.ordenCanciones==='manual'?'az':PREF.ordenCanciones,c=>c.titulo);
+  return `<div class="gh"><span class="gn">Resultados</span><span class="gc">(${res.length})</span><span class="gl"></span></div>`
+    +(res.length?`<div class="${claseLista(true)}">${res.map(c=>item('cancion',c,'busqueda',false)).join('')}</div>`:'<p class="vacio">No se encontr\u00f3 nada.</p>');
+}
+
+// pintarContenido: dibuja la parte de abajo (álbumes, canciones o resultados).
+function pintarContenido(){
+  const zona=$('#contenido');if(!zona||editando())return;
+  const q=busqueda.trim().toLowerCase(),alb=E.albumes.find(a=>a.id===albumAbierto);
+  if(albumAbierto&&!alb)albumAbierto=null;                          // el álbum ya no existe
+  zona.innerHTML=q?htmlBusqueda(q):(alb?htmlAlbum(alb):htmlAlbumes());
+}
+
+// htmlMenu: el contenido del menú «Vista».
+function htmlMenu(){
+  const grupo=(clave,opciones)=>`<div class="vseg">${opciones.map(([v,t])=>`<button data-p="${clave}:${v}" class="${PREF[clave]===v?'on':''}">${t}</button>`).join('')}</div>`;
+  const orden=[['manual','Manual'],['az','A &rarr; Z'],['za','Z &rarr; A']];
+  return `<div class="vt">Ver como</div>${grupo('vista',[['cuadricula','Cuadr\u00edcula'],['lista','Lista']])}
+    <div class="vt">Ordenar \u00e1lbumes</div>${grupo('ordenAlbumes',orden)}
+    <div class="vt">Ordenar canciones</div>${grupo('ordenCanciones',orden)}
+    <label class="vchk"><input type="checkbox" data-pc="agrupar" ${PREF.agrupar?'checked':''}> Agrupar \u00e1lbumes por artista</label>`;
+}
+function pintarMenu(){const m=$('.vmenu');if(m){m.innerHTML=htmlMenu();m.hidden=!menuAbierto}}
+
+// montar: dibuja la barra de arriba (una sola vez al entrar a la pantalla).
+function montar(){
+  el.innerHTML=`<div id="canc"><div class="barra">
+      <div class="buscar"><input id="q" placeholder="Buscar por nombre, etiqueta o letra" value="${esc(busqueda)}" autocomplete="off"><button class="x" id="qx" aria-label="Borrar b\u00fasqueda" ${busqueda?'':'hidden'}>&times;</button></div>
+      <button id="na">${ic('pls',16)} Nuevo \u00e1lbum</button><button id="nc">${ic('pls',16)} Nueva canci\u00f3n</button><button class="sec" id="et">Etiquetas</button>
+      <span class="vbox"><button class="sec" id="vista">Vista &#9662;</button><div class="vmenu" hidden></div></span></div>
+    <div id="contenido"></div><input type="file" id="ff" accept="image/*" hidden></div>`;
+  const raiz=$('#canc');
+  raiz.addEventListener('click',alHacerClic);
+  raiz.addEventListener('input',alEscribir);
+  raiz.addEventListener('change',alCambiarAlgo);
+  raiz.addEventListener('keydown',e=>{if(e.key==='Escape'&&e.target.id==='q')borrarBusqueda()});
+  raiz.addEventListener('dragstart',alEmpezarArrastre);
+  raiz.addEventListener('dragover',alPasarArrastrando);
+  raiz.addEventListener('drop',alSoltar);
+  raiz.addEventListener('dragend',alTerminarArrastre);
+  pintarMenu();pintarContenido();
+}
+
+// ---------------------------------------------------------------------
+// 6. ACCIONES (qué pasa al hacer clic)
+// ---------------------------------------------------------------------
+function borrarBusqueda(){
+  busqueda='';const q=$('#q');if(q){q.value='';q.focus()}
+  const x=$('#qx');if(x)x.hidden=true;
+  pintarContenido();
+}
+function alEscribir(e){
+  if(e.target.id!=='q')return;
+  busqueda=e.target.value;$('#qx').hidden=!busqueda;pintarContenido();
+}
+function alCambiarAlgo(e){
+  const t=e.target;
+  if(t.id==='ff'&&t.files[0]&&fotoPara){imagen(t.files[0]).then(f=>guardar('albumes',fotoPara,{foto:f}));t.value=''}   // nueva foto de álbum
+  else if(t.dataset.pc==='agrupar'){PREF.agrupar=t.checked;guardarPreferencias();pintarMenu();pintarContenido()}       // casilla «Agrupar»
+}
+
+function alHacerClic(e){
+  const t=e.target;
+  // Cerrar el menú «Vista» si hiciste clic fuera de él
+  if(menuAbierto&&!t.closest('.vbox')){menuAbierto=false;pintarMenu()}
+
+  // --- Barra de arriba ---
+  if(t.closest('#qx'))return borrarBusqueda();
+  if(t.closest('#na'))return formulario('Nuevo \u00e1lbum',[{id:'nombre',etiqueta:'Nombre del \u00e1lbum'},{id:'artista',etiqueta:'Artista (opcional)',lista:listaDeArtistas()}],v=>{
+    if(!v.nombre)return alert('Escribe un nombre.');
+    crear('albumes',{nombre:v.nombre,artista:v.artista});
+  });
+  if(t.closest('#nc')){
+    if(!E.albumes.length)return alert('Primero crea un \u00e1lbum.');
+    return abrir({albumId:albumAbierto||ordenar(E.albumes,'az',a=>a.nombre)[0].id},pintarContenido);
+  }
+  if(t.closest('#et'))return etiquetas();
+  if(t.closest('#vista')){menuAbierto=!menuAbierto;return pintarMenu()}
+  const opcion=t.closest('[data-p]');                                  // botones del menú «Vista»
+  if(opcion){const [clave,valor]=opcion.dataset.p.split(':');PREF[clave]=valor;guardarPreferencias();pintarMenu();return pintarContenido()}
+
+  // --- Contenido ---
+  const grupo=t.closest('[data-grupo]');                               // plegar o desplegar un artista
+  if(grupo){const k=grupo.dataset.grupo,i=PREF.plegados.indexOf(k);if(i>=0)PREF.plegados.splice(i,1);else PREF.plegados.push(k);guardarPreferencias();return pintarContenido()}
+  if(t.closest('[data-volver]')){albumAbierto=null;return pintarContenido()}
+  const accion=t.closest('[data-acc]');                                // botones del menú ⋮
+  if(accion){const d=accion.dataset;hacer(d.acc,d.tipo,d.id,d.cont);const det=accion.closest('details');if(det)det.removeAttribute('open');return}
+  if(t.closest('summary'))return;                                      // abrir el menú ⋮ no abre el elemento
+  const it=t.closest('[data-tipo][data-id]');                          // clic en un álbum o canción
+  if(it){
+    if(it.dataset.tipo==='album'){albumAbierto=it.dataset.id;return pintarContenido()}
+    const c=E.canciones.find(x=>x.id===it.dataset.id);if(c)abrir(c,pintarContenido);
+  }
+}
+
+// hacer: ejecuta una acción del menú ⋮.
+function hacer(acc,tipo,id,cont){
+  const alb=E.albumes.find(a=>a.id===id),can=E.canciones.find(c=>c.id===id);
+  if(acc==='nombre')formulario('Editar nombre del \u00e1lbum',[{id:'nombre',etiqueta:'Nombre',valor:alb.nombre}],v=>{if(v.nombre)guardar('albumes',alb.id,{nombre:v.nombre})});
+  else if(acc==='artista')formulario('Artista del \u00e1lbum',[{id:'artista',etiqueta:'Artista (vac\u00edo = sin artista)',valor:artistaDe(alb),lista:listaDeArtistas()}],v=>guardar('albumes',alb.id,{artista:v.artista}));
+  else if(acc==='foto'){fotoPara=alb.id;$('#ff').click()}
+  else if(acc==='atras'||acc==='adelante')moverUno(tipo,id,cont,acc==='atras'?-1:1);
+  else if(acc==='eliminar'){
+    if(tipo==='album'){
+      if(E.canciones.some(c=>c.albumId===alb.id))return alert('Primero mueve o elimina las canciones de este \u00e1lbum.');
+      eliminar('albumes',alb,'el \u00e1lbum "'+alb.nombre+'"');
+    }else eliminar('canciones',can,'la canci\u00f3n "'+can.titulo+'"');
+  }
+}
+
+// ---------------------------------------------------------------------
+// 7. ARRASTRAR Y SOLTAR (orden manual con el mouse, solo en computadora)
+// ---------------------------------------------------------------------
+const elemento=e=>e.target.closest?e.target.closest('[data-tipo][data-id][draggable="true"]'):null;
+function alEmpezarArrastre(e){
+  const t=elemento(e);if(!t)return;
+  arrastre={id:t.dataset.id,tipo:t.dataset.tipo,cont:t.dataset.cont};destino=null;
+  e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',t.dataset.id);
+  setTimeout(()=>t.classList.add('arrastrando'),0);
+}
+function alPasarArrastrando(e){
+  if(!arrastre)return;
+  const t=elemento(e);if(!t||t.dataset.cont!==arrastre.cont||t.dataset.id===arrastre.id)return;   // solo dentro del mismo grupo
+  e.preventDefault();
+  const r=t.getBoundingClientRect(),enFila=t.classList.contains('fila2');
+  const despues=enFila?e.clientY>r.top+r.height/2:e.clientX>r.left+r.width/2;
+  quitarMarcas();t.classList.add(despues?'despues':'antes');destino={id:t.dataset.id,despues};
+}
+function alSoltar(e){
+  if(!arrastre||!destino)return;
+  e.preventDefault();
+  const lista=listaDelContenedor(arrastre.cont),movido=lista.find(x=>x.id===arrastre.id);
+  const resto=lista.filter(x=>x.id!==arrastre.id),pos=resto.findIndex(x=>x.id===destino.id);
+  if(movido&&pos>=0){resto.splice(destino.despues?pos+1:pos,0,movido);guardarOrden(arrastre.tipo==='album'?'albumes':'canciones',resto)}
+  alTerminarArrastre();
+}
+const quitarMarcas=()=>document.querySelectorAll('.antes,.despues').forEach(x=>x.classList.remove('antes','despues'));
+function alTerminarArrastre(){quitarMarcas();document.querySelectorAll('.arrastrando').forEach(x=>x.classList.remove('arrastrando'));arrastre=null;destino=null}
+
+// ---------------------------------------------------------------------
+// 8. FORMULARIOS (ventanitas con uno o dos campos)
+//    campos = [{id, etiqueta, valor, lista}]   alAceptar recibe {id: texto}
+// ---------------------------------------------------------------------
+function formulario(titulo,campos,alAceptar){
+  const o=modal(`<div class="mh"><h2>${esc(titulo)}</h2><button class="ic" data-cx aria-label="Cerrar">${ic('x')}</button></div>`
+    +campos.map(c=>`<label class="fl2" style="margin-bottom:10px">${esc(c.etiqueta)}<input id="f_${c.id}" value="${esc(c.valor||'')}" ${c.lista?`list="l_${c.id}"`:''} autocomplete="off"></label>${c.lista?`<datalist id="l_${c.id}">${c.lista.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}`).join('')
+    +'<div class="barra"><button id="ok">Aceptar</button><button class="sec" data-cx>Cancelar</button></div>');
+  const aceptar=()=>{const v={};campos.forEach(c=>{v[c.id]=$('#f_'+c.id,o).value.trim()});o.remove();alAceptar(v)};
+  o.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.cx!=null)o.remove();else if(b.id==='ok')aceptar()};
+  o.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();aceptar()}};
+  const primero=$('input',o);if(primero){primero.focus();primero.select()}
+}
+
+// ---------------------------------------------------------------------
+// 9. ARRANQUE (cómo se conecta con el resto de la app)
+// ---------------------------------------------------------------------
+vistas.canciones=contenedor=>{el=contenedor;albumAbierto=null;busqueda='';menuAbierto=false;montar()};
+alCambiar(()=>{if(el&&!editando())pintarContenido()});                      // cuando cambian los datos, se vuelve a dibujar
+addEventListener('hashchange',()=>{if(location.hash!=='#canciones'){el=null;forzarCierre()}});   // al salir de la pantalla
+addEventListener('reinicio',e=>{                                            // clic en «Canciones» de la barra de arriba
+  if(e.detail==='canciones'&&el){forzarCierre();albumAbierto=null;busqueda='';menuAbierto=false;montar()}
+});

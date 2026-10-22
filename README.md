@@ -1,1 +1,22 @@
-# Musicapp
+# Músicapp
+
+Aplicación web para el ministerio de música: canciones, repertorio, calendario, escalas y respaldo de datos. Usa Firebase (Firestore) para guardar la información.
+
+## Archivos
+
+- `index.html`: página principal
+- `estilos.css`: estilos
+- `base.js`: conexión a Firebase, funciones comunes y navegación
+- `canciones.js`, `editor.js`, `formato.js`, `etiquetas.js`, `musica.js`: canciones y su editor
+- `repertorio.js`, `calendario.js`, `escalas.js`, `respaldo.js`, `estado.js`: resto de secciones
+- `firebase-config.js`: configuración del proyecto de Firebase
+
+## Cómo ejecutarla
+
+Los scripts son módulos de JavaScript, así que hay que abrirla desde un servidor (no con doble clic en `index.html`). Por ejemplo:
+
+```
+npx serve .
+```
+
+También funciona publicada en GitHub Pages o en Firebase Hosting.
