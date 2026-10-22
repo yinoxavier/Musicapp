@@ -55,4 +55,12 @@ details div{background:#fff;box-shadow:0 4px 16px #0003;border-radius:12px;paddi
 .tag{display:inline-flex;align-items:center;gap:4px;background:var(--suave);color:var(--azul);border-radius:20px;padding:6px 12px;font-weight:600;font-size:14px}
 .tag input{border:0;background:#fff;padding:4px 8px;border-radius:12px;width:130px}
 .tag .ic{width:26px;height:26px;background:transparent}
+/* login */
+.sin-sesion header{justify-content:center}
+.login{max-width:340px;margin:8vh auto 0;background:#fff;border-radius:20px;padding:26px;box-shadow:0 6px 24px #1f2a4d22;display:grid;gap:14px}
+.login h2{margin:0 0 4px;text-align:center}
+.login label{display:grid;gap:6px;font-weight:600;font-size:14px;color:var(--azul)}
+.login .error{margin:0;color:var(--rojo);font-size:14px;font-weight:600}
+.login button{margin-top:4px;padding:11px}
+header .salir{background:#ffffff1a;color:#c9d1ec;padding:7px 12px;font-size:14px}
 @media(max-width:700px){header{padding:8px 12px}main{padding:14px 12px}nav a{padding:7px 9px;font-size:13px}}
