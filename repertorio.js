@@ -73,7 +73,7 @@ function cancion(c,ac){
   return h+'</div>';
 }
 
-let C=[],T=[],A=[],R=[],el=null,rep=null,tm=null,fullMode=false;
+let C=[],T=[],A=[],R=[],el=null,rep=null,tm=null,fullMode=false,fullZoom=1,pinchDist=0,baseZoom=1;
 const alb=c=>A.find(a=>a.id===c.albumId)?.nombre||'';
 const titAlb=c=>`<span>${esc(c.titulo)}</span>`+(alb(c)?`<small>${esc(alb(c))}</small>`:'');
 const ref=()=>{if(el)rep?pder():lista()};
@@ -94,7 +94,7 @@ vistas.repertorio=e=>{
   sessionStorage.removeItem('repAbrir');sessionStorage.removeItem('repFecha');
   if(a&&R.find(x=>x.id===a))abrir(a);else if(f)nuevo(f);else lista();
 };
-addEventListener('hashchange',()=>{if(location.hash!=='#repertorio'){flush();el=null;rep=null;fullMode=false}});
+addEventListener('hashchange',()=>{if(location.hash!=='#repertorio'){flush();el=null;rep=null;fullMode=false;fullZoom=1}});
 addEventListener('reinicio',e=>{if(e.detail==='repertorio'&&el){flush();rep=null;fullMode=false;lista()}});
 
 function lista(){
@@ -109,10 +109,29 @@ async function nuevo(f){const d={nombre:'Nuevo repertorio',fecha:f||'',tipo:'mis
 function abrir(id){rep=structuredClone(R.find(x=>x.id===id));rep.misa=rep.misa||{};rep.secciones=rep.secciones||[];editor()}
 function editor(){
   el.className=fullMode?"modo-full":"";
-  el.innerHTML=`<div class="rcols"><section class="c2" id="izq"></section><section><div class="ch2 noprint"><h2>Vista previa</h2><div class="mb"><button data-full class="sec">${ico(FUL)} ${fullMode?'Salir vista completa':'Vista completa'}</button><button data-print>${ico(PRN)} Descargar PDF</button></div></div><div class="hojap" id="hoja"></div></section></div>`;
+  if(!fullMode) fullZoom = 1; // Reiniciar zoom al salir de pantalla completa
+  el.innerHTML=`<div class="rcols"><section class="c2" id="izq"></section><section><div class="ch2 noprint" id="btn-full-container" ${fullMode ? 'style="position:fixed;top:15px;right:15px;z-index:9999;background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);"' : ''}><h2 style="margin:0; ${fullMode ? 'display:none;' : ''}">Vista previa</h2><div style="display:flex;gap:6px;"><button data-full class="sec">${ico(FUL)} ${fullMode?'Salir vista completa':'Vista completa'}</button><button data-print>${ico(PRN)} Descargar PDF</button></div></div><div class="hojap" id="hoja" style="transform: scale(${fullZoom}); transform-origin: top center; transition: transform 0.05s ease-out;"></div></section></div>`;
   pizq();pder();
-}
-function pizq(){
+  
+  // Agregar listeners táctiles para zoom por gestos en pantalla completa
+  const hojaEl = $('#hoja');
+  if(hojaEl){
+    hojaEl.ontouchstart = e => {
+      if(fullMode && e.touches.length === 2){
+        pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        baseZoom = fullZoom;
+      }
+    };
+    hojaEl.ontouchmove = e => {
+      if(fullMode && e.touches.length === 2 && pinchDist > 0){
+        e.preventDefault();
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        fullZoom = Math.min(Math.max(0.5, baseZoom * (dist / pinchDist)), 2.5); // Limita el zoom entre 50% y 250%
+        hojaEl.style.transform = `scale(${fullZoom})`;
+      }
+    };
+  }
+}function pizq(){
   const i=$('#izq');if(!i||!rep)return;
   const fila=([id,n])=>{const c=C.find(x=>x.id===rep.misa[id]);
     return`<div class="mrow"><div class="mn"><b>${n}</b>${c?titAlb(c):'<em class="falta">Sin canci\u00f3n</em>'}</div><button class="ic" data-pick="${id}" aria-label="Elegir canci\u00f3n para ${n}" title="Elegir">${ic('edt',15)}</button><button class="ic" data-rnd="${id}" aria-label="Canci\u00f3n al azar para ${n}" title="Al azar">${ico(SHF,15)}</button>${c?`<button class="ic rj" data-rm="${id}" aria-label="Quitar canci\u00f3n de ${n}" title="Quitar">${ic('x',15)}</button>`:''}</div>`};
@@ -150,7 +169,7 @@ function clic(e){
   if(d.nuevo!=null)nuevo();
   else if(d.del){const r=R.find(x=>x.id===d.del);eliminar('repertorios',r,'el repertorio "'+(r.nombre||'')+'"')}
   else if(d.open)abrir(d.open);
-  else if(d.back!=null){flush();rep=null;fullMode=false;lista()}
+  else if(d.back!=null){flush();rep=null;fullMode=false;fullZoom=1;lista()}
   else if(d.print!=null)imprimir();
   else if(d.full!=null){fullMode=!fullMode;editor()}
   else if(d.tipo){rep.tipo=d.tipo;ok()}
