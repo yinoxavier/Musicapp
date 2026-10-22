@@ -6,7 +6,7 @@ Aplicación web para el ministerio de música: canciones, repertorio, calendario
 
 - `index.html`: página principal
 - `login.js`: pantalla de inicio de sesión (usuario y contraseña están al inicio del archivo)
-- `estilos.css`: estilos
+- `estilos.css`: estilos generales. Los colores, radios y sombras están como variables al inicio (`--azul`, `--oro`, `--fondo`...); cámbialos ahí para ajustar toda la app
 - `base.js`: conexión a Firebase, funciones comunes y navegación
 - `canciones.js`, `editor.js`, `formato.js`, `etiquetas.js`, `musica.js`: canciones y su editor
 - `repertorio.js`, `calendario.js`, `escalas.js`, `respaldo.js`, `estado.js`: resto de secciones

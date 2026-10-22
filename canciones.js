@@ -25,22 +25,29 @@ import {etiquetas} from "./etiquetas.js";
 // ---------------------------------------------------------------------
 const hoja=document.createElement('style');
 hoja.textContent=`.lst{display:grid;gap:8px}
-.fila2{display:flex;align-items:center;gap:12px;background:#fff;border-radius:12px;padding:8px 52px 8px 8px;cursor:pointer;position:relative;box-shadow:0 1px 6px #1f2a4d14}
-.fila2:hover{box-shadow:0 4px 14px #1f2a4d26}.fila2 .mini{width:44px;height:44px;border-radius:8px;background:#e1e6f2 center/cover;display:grid;place-items:center;flex:none}
-.fila2 b{flex:1;min-width:0;word-break:break-word}.fila2 details{top:50%;transform:translateY(-50%)}
-.buscar{position:relative;flex:1;min-width:200px}.buscar input{width:100%;padding-right:36px}
-.buscar .x{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:28px;height:28px;padding:0;border-radius:50%;background:transparent;color:#6b7390;font-size:20px;line-height:1}
-.vbox{position:relative}.vmenu{position:absolute;right:0;top:100%;z-index:12;background:#fff;border-radius:14px;box-shadow:0 8px 28px #0004;padding:12px;width:290px;margin-top:6px}
-.vmenu[hidden]{display:none}.vt{font-size:12px;font-weight:700;color:#6b7390;margin:10px 0 4px}.vt:first-child{margin-top:0}
-.vseg{display:flex;background:#e1e6f2;border-radius:10px;padding:3px;gap:2px}.vseg button{flex:1;background:transparent;color:#1F2A4D;padding:6px 4px;font-size:13px}.vseg button.on{background:#1F2A4D;color:#fff}
-.vchk{display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:600;font-size:14px}
-.grupo{margin-bottom:14px}.gh{display:flex;align-items:center;gap:8px;width:100%;background:none;color:#1F2A4D;padding:6px 2px;font-weight:700;font-size:15px;border-radius:6px;justify-content:flex-start}
-.gh:hover{background:#e9edf7;filter:none}.gh .chev{display:inline-flex;transition:transform .15s;color:#6b7390}.grupo.abierto .chev{transform:rotate(90deg)}
-.gc{color:#6b7390;font-weight:500}.gl{flex:1;height:1px;background:#c3cae0;margin-left:6px}div.gh{cursor:default}
-.ruta{display:flex;align-items:center;gap:10px;margin-bottom:12px}.ruta small{color:#6b7390}.vacio{color:#6b7390}
-.fl2{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b7390}
-.arrastrando{opacity:.4}.antes{box-shadow:-5px 0 0 #C58A2B!important}.despues{box-shadow:5px 0 0 #C58A2B!important}
-.lst .antes{box-shadow:0 -4px 0 #C58A2B!important}.lst .despues{box-shadow:0 4px 0 #C58A2B!important}`;
+.fila2{display:flex;align-items:center;gap:14px;background:var(--blanco);border-radius:var(--r-m);padding:8px 52px 8px 8px;cursor:pointer;position:relative;box-shadow:var(--sombra-1);transition:box-shadow .2s;outline-offset:2px}
+.fila2:hover{box-shadow:var(--sombra-2)}
+.fila2 .mini{width:46px;height:46px;border-radius:var(--r-s);background:var(--capa) center/cover;display:grid;place-items:center;flex:none;color:#8C95B3}
+.fila2 b{flex:1;min-width:0;word-break:break-word;font-size:15px}.fila2 details{top:50%;transform:translateY(-50%)}
+#canc .fila2 small,#canc .card small{display:block;color:var(--gris);font-weight:500;font-size:12.5px}
+#canc .card small{margin:0 4px 4px}
+.buscar{position:relative;flex:1 1 260px;min-width:200px}
+.buscar>svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gris);pointer-events:none}
+.buscar input{width:100%;padding-left:38px;padding-right:40px}
+.buscar .x{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:30px;height:30px;min-height:0;padding:0;border-radius:50%;background:transparent;color:var(--gris);font-size:20px;line-height:1}
+.buscar .x:hover{background:var(--suave);filter:none}
+.vbox{position:relative}.vmenu{position:absolute;right:0;top:100%;z-index:12;background:var(--blanco);border:1px solid var(--linea);border-radius:14px;box-shadow:var(--sombra-2);padding:14px;width:300px;margin-top:6px}
+.vt{font-size:13px;font-weight:700;color:var(--gris);margin:12px 0 6px}.vt:first-child{margin-top:0}
+.vseg{display:flex;background:var(--suave);border-radius:var(--r-m);padding:3px;gap:2px}.vseg button{flex:1;background:transparent;color:var(--azul);min-height:34px;padding:6px 4px;font-size:13.5px;border-radius:9px}.vseg button.on{background:var(--azul);color:#fff}
+.vchk{display:flex;gap:10px;align-items:center;margin-top:14px;font-weight:600;font-size:14px;cursor:pointer}
+.grupo{margin-bottom:18px}.gh{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;background:none;color:var(--azul);padding:6px 4px;font-weight:700;font-size:15.5px;border-radius:var(--r-s);justify-content:flex-start;margin-bottom:6px}
+.gh:hover{background:#E4E8F2;filter:none}.gh .chev{display:inline-flex;transition:transform .15s;color:var(--gris)}.grupo.abierto .chev{transform:rotate(90deg)}
+.gc{color:var(--gris);font-weight:600;font-size:13px;background:var(--suave);border-radius:999px;padding:1px 9px}.gl{flex:1;height:1px;background:var(--linea-2);margin-left:6px}div.gh{cursor:default}
+.ruta{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}.ruta h2{margin:0;font-size:24px}.ruta small{color:var(--gris);font-size:14px;font-weight:600}
+.vacio{color:var(--gris);background:var(--blanco);border:1px dashed var(--linea-2);border-radius:var(--r-l);padding:28px 20px;text-align:center}
+.arrastrando{opacity:.4}.antes{box-shadow:-5px 0 0 var(--oro)!important}.despues{box-shadow:5px 0 0 var(--oro)!important}
+.lst .antes{box-shadow:0 -4px 0 var(--oro)!important}.lst .despues{box-shadow:0 4px 0 var(--oro)!important}
+@media(max-width:760px){#canc .barra>button{flex:1 1 auto}#canc .vbox{flex:1 1 auto;display:flex}#canc .vbox>button{flex:1}.vmenu{width:min(300px,calc(100vw - 28px))}}`;
 document.head.append(hoja);
 
 // ---------------------------------------------------------------------
@@ -136,35 +143,38 @@ function gruposDeAlbumes(){
 const fotoDe=alb=>alb&&alb.foto?`style="background-image:url(${alb.foto})"`:'';
 
 // menuDe: el menú ⋮ de cada álbum o canción.
-function menuDe(tipo,o,cont,manual){
+function menuDe(tipo,o,cont,manual,titulo){
   const datos=`data-tipo="${tipo}" data-id="${o.id}" data-cont="${esc(cont)}"`;
   const boton=(acc,texto,clase='')=>`<button class="${clase}" data-acc="${acc}" ${datos}>${texto}</button>`;
   const deAlbum=tipo==='album'?boton('nombre','Editar nombre')+boton('artista','Editar artista')+boton('foto','Editar foto del \u00e1lbum'):'';
   const mover=manual?boton('atras','Mover atr\u00e1s')+boton('adelante','Mover adelante'):'';
-  return `<details><summary>&#8942;</summary><div>${deAlbum}${mover}${boton('eliminar','Eliminar','rojo')}</div></details>`;
+  return `<details><summary aria-label="Opciones de \u00ab${esc(titulo)}\u00bb" title="Opciones">&#8942;</summary><div>${deAlbum}${mover}${boton('eliminar','Eliminar','rojo')}</div></details>`;
 }
 
 // item: dibuja UN álbum o UNA canción (como tarjeta o como fila, según la vista).
 function item(tipo,o,cont,arrastrable){
   const esAlbum=tipo==='album',alb=esAlbum?o:E.albumes.find(a=>a.id===o.albumId);
-  const titulo=esAlbum?o.nombre:o.titulo,icono=alb&&alb.foto?'':(esAlbum?'\u{1F4C1}':'\u{1F3B5}');
-  const datos=`data-tipo="${tipo}" data-id="${o.id}" data-cont="${esc(cont)}" ${arrastrable?'draggable="true"':''}`;
-  const menu=menuDe(tipo,o,cont,arrastrable);
-  if(PREF.vista==='lista')return `<div class="fila2" ${datos}><div class="mini" ${fotoDe(alb)}>${icono}</div><b>${esc(titulo)}</b>${menu}</div>`;
-  return `<div class="card" ${datos}><div class="foto" ${fotoDe(alb)}>${icono}</div><b>${esc(titulo)}</b>${menu}</div>`;
+  const titulo=esAlbum?o.nombre:o.titulo,lista=PREF.vista==='lista';
+  const icono=alb&&alb.foto?'':(esAlbum?ic('dsc',lista?22:40):ic('mus',lista?20:30));
+  const n=esAlbum?E.canciones.filter(c=>c.albumId===o.id).length:0;
+  const detalle=esAlbum?`<small>${n} ${n===1?'canci\u00f3n':'canciones'}</small>`:(cont==='busqueda'&&alb?`<small>${esc(alb.nombre)}</small>`:'');
+  const datos=`data-tipo="${tipo}" data-id="${o.id}" data-cont="${esc(cont)}" ${arrastrable?'draggable="true"':''} role="button" tabindex="0"`;
+  const menu=menuDe(tipo,o,cont,arrastrable,titulo);
+  if(lista)return `<div class="fila2" ${datos}><div class="mini" ${fotoDe(alb)}>${icono}</div><b>${esc(titulo)}${detalle}</b>${menu}</div>`;
+  return `<div class="card" ${datos}><div class="foto" ${fotoDe(alb)}>${icono}</div><b>${esc(titulo)}</b>${detalle}${menu}</div>`;
 }
 
 const claseLista=(chica)=>PREF.vista==='lista'?'lst':'grid'+(chica?' chico':'');
 
 // htmlAlbumes: la lista de álbumes, con los grupos de artistas plegables.
 function htmlAlbumes(){
-  if(!E.albumes.length)return '<p class="vacio">A\u00fan no hay \u00e1lbumes. Pulsa \u00abNuevo \u00e1lbum\u00bb.</p>';
+  if(!E.albumes.length)return '<p class="vacio">A\u00fan no hay \u00e1lbumes. Pulsa \u00abNuevo \u00e1lbum\u00bb para crear el primero.</p>';
   const manual=PREF.ordenAlbumes==='manual';
   return gruposDeAlbumes().map(g=>{
     const cont='alb:'+(g.nombre||''),filas=`<div class="${claseLista(false)}">${g.albumes.map(a=>item('album',a,cont,manual)).join('')}</div>`;
     if(g.nombre===null)return filas;                                  // sin encabezados
     const clave='a:'+g.nombre,plegado=PREF.plegados.includes(clave);
-    return `<section class="grupo ${plegado?'':'abierto'}"><button class="gh" data-grupo="${esc(clave)}"><span class="chev">${ic('rgt',16)}</span><span class="gn">${esc(g.nombre||'Sin artista')}</span><span class="gc">(${g.albumes.length})</span><span class="gl"></span></button>${plegado?'':filas}</section>`;
+    return `<section class="grupo ${plegado?'':'abierto'}"><button class="gh" data-grupo="${esc(clave)}" aria-expanded="${!plegado}"><span class="chev">${ic('rgt',16)}</span><span class="gn">${esc(g.nombre||'Sin artista')}</span><span class="gc">${g.albumes.length}</span><span class="gl"></span></button>${plegado?'':filas}</section>`;
   }).join('');
 }
 
@@ -172,8 +182,8 @@ function htmlAlbumes(){
 function htmlAlbum(alb){
   const manual=PREF.ordenCanciones==='manual';
   const canciones=ordenar(E.canciones.filter(c=>c.albumId===alb.id),PREF.ordenCanciones,c=>c.titulo);
-  return `<div class="ruta"><button class="sec" data-volver>${ic('lft',16)} \u00c1lbumes</button><span><b>${esc(alb.nombre)}</b>${artistaDe(alb)?` <small>\u00b7 ${esc(artistaDe(alb))}</small>`:''}</span></div>`
-    +(canciones.length?`<div class="${claseLista(true)}">${canciones.map(c=>item('cancion',c,'can:'+alb.id,manual)).join('')}</div>`:'<p class="vacio">Este \u00e1lbum a\u00fan no tiene canciones.</p>');
+  return `<div class="ruta"><button class="sec" data-volver>${ic('lft',16)} \u00c1lbumes</button><div><h2>${esc(alb.nombre)}</h2>${artistaDe(alb)?`<small>${esc(artistaDe(alb))}</small>`:''}</div></div>`
+    +(canciones.length?`<div class="${claseLista(true)}">${canciones.map(c=>item('cancion',c,'can:'+alb.id,manual)).join('')}</div>`:'<p class="vacio">Este \u00e1lbum a\u00fan no tiene canciones. Pulsa \u00abNueva canci\u00f3n\u00bb para a\u00f1adir la primera.</p>');
 }
 
 // coincide: ¿esta canción coincide con lo que escribiste en el buscador?
@@ -185,8 +195,8 @@ function coincide(c,q){
 
 function htmlBusqueda(q){
   const res=ordenar(E.canciones.filter(c=>coincide(c,q)),PREF.ordenCanciones==='manual'?'az':PREF.ordenCanciones,c=>c.titulo);
-  return `<div class="gh"><span class="gn">Resultados</span><span class="gc">(${res.length})</span><span class="gl"></span></div>`
-    +(res.length?`<div class="${claseLista(true)}">${res.map(c=>item('cancion',c,'busqueda',false)).join('')}</div>`:'<p class="vacio">No se encontr\u00f3 nada.</p>');
+  return `<div class="gh"><span class="gn">Resultados</span><span class="gc">${res.length}</span><span class="gl"></span></div>`
+    +(res.length?`<div class="${claseLista(true)}">${res.map(c=>item('cancion',c,'busqueda',false)).join('')}</div>`:`<p class="vacio">No hay canciones que coincidan con \u00ab${esc(busqueda.trim())}\u00bb.</p>`);
 }
 
 // pintarContenido: dibuja la parte de abajo (álbumes, canciones o resultados).
@@ -206,20 +216,24 @@ function htmlMenu(){
     <div class="vt">Ordenar canciones</div>${grupo('ordenCanciones',orden)}
     <label class="vchk"><input type="checkbox" data-pc="agrupar" ${PREF.agrupar?'checked':''}> Agrupar \u00e1lbumes por artista</label>`;
 }
-function pintarMenu(){const m=$('.vmenu');if(m){m.innerHTML=htmlMenu();m.hidden=!menuAbierto}}
+function pintarMenu(){const m=$('.vmenu');if(m){m.innerHTML=htmlMenu();m.hidden=!menuAbierto}const b=$('#vista');if(b)b.setAttribute('aria-expanded',String(menuAbierto))}
 
 // montar: dibuja la barra de arriba (una sola vez al entrar a la pantalla).
 function montar(){
   el.innerHTML=`<div id="canc"><div class="barra">
-      <div class="buscar"><input id="q" placeholder="Buscar por nombre, etiqueta o letra" value="${esc(busqueda)}" autocomplete="off"><button class="x" id="qx" aria-label="Borrar b\u00fasqueda" ${busqueda?'':'hidden'}>&times;</button></div>
+      <div class="buscar" role="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" type="search" placeholder="Buscar por nombre, etiqueta o letra" aria-label="Buscar canciones" value="${esc(busqueda)}" autocomplete="off"><button class="x" id="qx" aria-label="Borrar b\u00fasqueda" ${busqueda?'':'hidden'}>&times;</button></div>
       <button id="na">${ic('pls',16)} Nuevo \u00e1lbum</button><button id="nc">${ic('pls',16)} Nueva canci\u00f3n</button><button class="sec" id="et">Etiquetas</button>
-      <span class="vbox"><button class="sec" id="vista">Vista &#9662;</button><div class="vmenu" hidden></div></span></div>
+      <span class="vbox"><button class="sec" id="vista" aria-haspopup="true" aria-expanded="false">Vista &#9662;</button><div class="vmenu" hidden></div></span></div>
     <div id="contenido"></div><input type="file" id="ff" accept="image/*" hidden></div>`;
   const raiz=$('#canc');
   raiz.addEventListener('click',alHacerClic);
   raiz.addEventListener('input',alEscribir);
   raiz.addEventListener('change',alCambiarAlgo);
-  raiz.addEventListener('keydown',e=>{if(e.key==='Escape'&&e.target.id==='q')borrarBusqueda()});
+  raiz.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    if(e.target.id==='q')borrarBusqueda();
+    else if(menuAbierto){menuAbierto=false;pintarMenu();$('#vista').focus()}
+  });
   raiz.addEventListener('dragstart',alEmpezarArrastre);
   raiz.addEventListener('dragover',alPasarArrastrando);
   raiz.addEventListener('drop',alSoltar);
@@ -329,8 +343,8 @@ function alTerminarArrastre(){quitarMarcas();document.querySelectorAll('.arrastr
 // ---------------------------------------------------------------------
 function formulario(titulo,campos,alAceptar){
   const o=modal(`<div class="mh"><h2>${esc(titulo)}</h2><button class="ic" data-cx aria-label="Cerrar">${ic('x')}</button></div>`
-    +campos.map(c=>`<label class="fl2" style="margin-bottom:10px">${esc(c.etiqueta)}<input id="f_${c.id}" value="${esc(c.valor||'')}" ${c.lista?`list="l_${c.id}"`:''} autocomplete="off"></label>${c.lista?`<datalist id="l_${c.id}">${c.lista.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}`).join('')
-    +'<div class="barra"><button id="ok">Aceptar</button><button class="sec" data-cx>Cancelar</button></div>');
+    +campos.map(c=>`<label class="fl2" style="margin-bottom:12px">${esc(c.etiqueta)}<input id="f_${c.id}" value="${esc(c.valor||'')}" ${c.lista?`list="l_${c.id}"`:''} autocomplete="off"></label>${c.lista?`<datalist id="l_${c.id}">${c.lista.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}`).join('')
+    +'<div class="barra" style="justify-content:flex-end;margin:6px 0 0"><button class="sec" data-cx>Cancelar</button><button id="ok">Guardar</button></div>');
   const aceptar=()=>{const v={};campos.forEach(c=>{v[c.id]=$('#f_'+c.id,o).value.trim()});o.remove();alAceptar(v)};
   o.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.cx!=null)o.remove();else if(b.id==='ok')aceptar()};
   o.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();aceptar()}};

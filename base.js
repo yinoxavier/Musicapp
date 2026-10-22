@@ -36,33 +36,62 @@ const I={cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M
   usr:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',
   edt:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',
   trs:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>',
-  pls:'<path d="M12 5v14M5 12h14"/>',lft:'<path d="M15 18l-6-6 6-6"/>',rgt:'<path d="M9 18l6-6-6-6"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>'};
+  pls:'<path d="M12 5v14M5 12h14"/>',img:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  out:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>',lft:'<path d="M15 18l-6-6 6-6"/>',rgt:'<path d="M9 18l6-6-6-6"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>'};
 export const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+// modal(html): abre una ventana. Se cierra con Esc, con la X o tocando fuera.
+// Al cerrarse, el foco vuelve al botón que la abrió.
 export function modal(html){
-  const o=document.createElement('div');o.className='mo';o.innerHTML=`<div class="mc">${html}</div>`;
-  document.body.append(o);o.addEventListener('mousedown',e=>{if(e.target===o)o.remove()});return o;
+  const antes=document.activeElement;
+  const o=document.createElement('div');o.className='mo';o.innerHTML=`<div class="mc" role="dialog" aria-modal="true">${html}</div>`;
+  const titulo=o.querySelector('h2');if(titulo){titulo.id='mt'+Date.now();o.firstChild.setAttribute('aria-labelledby',titulo.id)}
+  o.remove=function(){Element.prototype.remove.call(this);if(antes&&antes.isConnected&&antes.focus)antes.focus()};
+  document.body.append(o);
+  o.addEventListener('mousedown',e=>{if(e.target===o)o.remove()});
+  setTimeout(()=>{if(o.contains(document.activeElement))return;const f=o.querySelector('input:not([type=hidden]):not([hidden]),select,textarea')||o.querySelector('button');if(f)f.focus()},0);
+  return o;
 }
+
+// Esc cierra la ventana que esté encima (aunque el foco se haya perdido)
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  const abiertas=document.querySelectorAll('body > .mo');
+  if(abiertas.length){e.stopPropagation();e.preventDefault();abiertas[abiertas.length-1].remove()}
+},true);
+
+// Tarjetas que funcionan como botón (role="button"): se abren también con Enter o Espacio
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if((e.key==='Enter'||e.key===' ')&&t.matches&&t.matches('[role="button"][tabindex]')){e.preventDefault();t.click()}
+});
 
 // ===== NAVEGACIÓN (la barra de arriba solo muestra los botones dentro de las pantallas) =====
 export const vistas={};
-const MENU=[['calendario','cal','Calendario'],['repertorio','mus','Repertorio'],['canciones','dsc','Canciones'],['escalas','usr','Escalas']];
+const MENU=[['calendario','cal','Calendario','Eventos y ensayos'],['repertorio','mus','Repertorio','Misas, eventos y PDF'],['canciones','dsc','Canciones','Letras y acordes'],['escalas','usr','Escalas','Equipos por día']];
 const vista=()=>location.hash.slice(1)||'inicio';
+let vistaAnterior=null;
 function irA(){
-  $('#nav').innerHTML=vista()==='inicio'?'':MENU.map(([k,i,n])=>`<a href="#${k}" class="${k===vista()?'on':''}">${ic(i,17)} ${n}</a>`).join('');
-  const el=$('#app');el.innerHTML='';
-  (vistas[vista()]||(e=>e.innerHTML='<p>Esta ventana llega en la siguiente parte.</p>'))(el);
+  const v=vista();
+  $('#nav').innerHTML=v==='inicio'?'':MENU.map(([k,i,n])=>`<a href="#${k}" class="${k===v?'on':''}" ${k===v?'aria-current="page"':''}>${ic(i,18)}<span>${n}</span></a>`).join('');
+  const el=$('#app');el.innerHTML='';el.className='';el.dataset.vista=v;
+  el.onclick=el.oninput=el.onchange=el.onkeydown=null;   // quita lo que dejó la pantalla anterior
+  const m=MENU.find(x=>x[0]===v);document.title=(m?m[2]+' · ':'')+(cfg.nombre||'Músicapp');
+  if(vistaAnterior!==v){window.scrollTo(0,0);vistaAnterior=v}
+  (vistas[v]||(e=>e.innerHTML='<div class="c2"><h2>Esta página no existe</h2><p><a href="#inicio">Volver al inicio</a></p></div>'))(el);
 }
 
 // ===== INICIO (logo, nombre y 4 botones) =====
 let cfg={nombre:'Ministerio de música',logo:''},listo=0;
 const cabecera=()=>{$('#logo').innerHTML=(cfg.logo?`<img src="${cfg.logo}" alt="">`:`<span class="lg">${ic('mus',20)}</span>`)+`<span>${esc(cfg.nombre)}</span>`};
 
+const hoyLargo=()=>{const t=new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'});return t.charAt(0).toUpperCase()+t.slice(1)};
 vistas.inicio=el=>{
   el.innerHTML=`<div class="inicio">
-    <div style="text-align:right"><button class="sec" id="bl">Logo</button> <button class="sec" id="bn">${ic('edt',15)} Nombre</button><input type="file" id="fl" accept="image/*" hidden></div>
-    ${cfg.logo?`<img class="logo" src="${cfg.logo}" alt="">`:`<div class="bigmark">${ic('mus',54)}</div>`}
+    <div class="portada">${cfg.logo?`<img class="logo" src="${cfg.logo}" alt="Logo">`:`<div class="bigmark">${ic('mus',54)}</div>`}</div>
     <h1>${esc(cfg.nombre)}</h1>
-    <div class="menu4">${MENU.map(([k,i,n])=>`<a href="#${k}">${ic(i,44)}<span>${n}</span></a>`).join('')}</div>
+    <p class="sub">${hoyLargo()}</p>
+    <div class="menu4">${MENU.map(([k,i,n,d])=>`<a href="#${k}"><span class="mi">${ic(i,34)}</span><span>${n}</span><small>${d}</small></a>`).join('')}</div>
+    <div class="ajustes"><button id="bl">${ic('img',16)} Cambiar logo</button><button id="bn">${ic('edt',16)} Cambiar nombre</button><input type="file" id="fl" accept="image/*" hidden></div>
   </div>`;
   $('#bl').onclick=()=>$('#fl').click();
   $('#fl').onchange=async e=>guardar('config','app',{logo:await imagen(e.target.files[0],200)});

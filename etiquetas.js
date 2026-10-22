@@ -13,11 +13,13 @@ export function etiquetas(alCerrar){
   // Dibuja el contenido de la ventana (se llama cada vez que algo cambia)
   function dibujar(){
     if(!ventana.isConnected){dejarDeEscuchar();if(alCerrar)alCerrar();return}   // la ventana ya se cerró
+    const activo=document.activeElement,enCampo=activo&&zona.contains(activo)?(activo.id||activo.dataset.te||null):null,texto=activo&&activo.id==='nt'?activo.value:'';
     zona.innerHTML=`<div class="mh"><h2>Etiquetas</h2><div class="mb"><button class="${modoEditar?'':'sec'}" data-ed>${modoEditar?'Listo':ic('edt',16)+' Editar'}</button><button class="ic" data-cx aria-label="Cerrar">${ic('x')}</button></div></div>
-      <div class="barra"><input id="nt" placeholder="Nueva etiqueta"><button data-add>${ic('pls',16)} A\u00f1adir</button></div>
+      <div class="barra"><input id="nt" placeholder="Nueva etiqueta" aria-label="Nueva etiqueta" autocomplete="off"><button data-add>${ic('pls',16)} A\u00f1adir</button></div>
       <div class="tags">${E.etiquetas.map(t=>modoEditar
         ?`<span class="tag"><input data-te="${t.id}" value="${esc(t.nombre)}" aria-label="Nombre"><button class="ic" data-tx="${t.id}" aria-label="Eliminar">${ic('trs',14)}</button></span>`
         :`<span class="tag">${esc(t.nombre)}</span>`).join('')}</div>`;
+    if(enCampo){const c=enCampo==='nt'?$('#nt',ventana):zona.querySelector(`[data-te="${enCampo}"]`);if(c){if(enCampo==='nt')c.value=texto;c.focus()}}   // el cursor se queda donde estaba
   }
   dejarDeEscuchar=alCambiar(dibujar);
   dibujar();

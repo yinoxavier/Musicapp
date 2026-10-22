@@ -38,7 +38,7 @@ function ventana(){
   const u=(()=>{try{return localStorage.getItem('ultimaCopia')}catch(e){return null}})();
   const o=modal(`<div class="mh"><h2>Copia de seguridad</h2><button class="ic" data-cx aria-label="Cerrar">${ic('x')}</button></div>
     <p style="margin-top:0">Descarga un archivo con todas tus canciones, \u00e1lbumes, etiquetas, repertorios, escalas y eventos. Gu\u00e1rdalo en un lugar seguro (Drive, correo...).</p>
-    <p style="color:#6b7390;font-size:13px">${u?'\u00daltima copia descargada en este dispositivo: '+new Date(u).toLocaleString('es'):'A\u00fan no has descargado ninguna copia en este dispositivo.'}</p>
+    <p style="color:var(--gris);font-size:13.5px">${u?'\u00daltima copia descargada en este dispositivo: '+new Date(u).toLocaleString('es'):'A\u00fan no has descargado ninguna copia en este dispositivo.'}</p>
     <div style="display:grid;gap:10px"><button id="dl">${ico(DL)} Descargar copia</button><button class="sec" id="up">${ico(UP)} Restaurar desde un archivo</button><input type="file" id="fi" accept=".json,application/json" hidden></div>
     <p id="ms" role="status" style="margin-bottom:0;font-weight:600"></p>`);
   const ms=t=>{$('#ms',o).textContent=t};
@@ -62,7 +62,9 @@ function ventana(){
 const inicio=vistas.inicio;
 vistas.inicio=el=>{
   inicio(el);
-  const barra=el.querySelector('.inicio > div');if(!barra)return;
-  const b=document.createElement('button');b.className='sec';b.innerHTML=ico(DL,15)+' Copia de seguridad';b.onclick=ventana;
-  barra.append(' ',b);
+  const barra=el.querySelector('.ajustes');if(!barra)return;
+  const b=document.createElement('button');b.dataset.respaldo='';b.innerHTML=ico(DL,16)+' Copia de seguridad';b.onclick=ventana;
+  barra.append(b);
 };
+// Si la pantalla de Inicio ya se dibujó antes de cargar este archivo, se añade el botón ahora
+{const app=document.getElementById('app');if(app&&app.querySelector('.ajustes')&&!app.querySelector('.ajustes [data-respaldo]'))vistas.inicio(app)}

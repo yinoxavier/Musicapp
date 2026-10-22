@@ -36,8 +36,8 @@ export function forzarCierre(){        // cierra el editor sin guardar (por ejem
 
 // ---------- ESTILOS del editor ----------
 const st=document.createElement('style');
-st.textContent=`#editor.ed{background:#cfd5e4;padding:0 16px 16px}
-.tb{position:sticky;top:0;z-index:3;background:#cfd5e4;margin:0 -16px;padding:16px 16px 6px}
+st.textContent=`#editor.ed{background:#D3D9E6;padding:0 16px 16px}
+.tb{position:sticky;top:0;z-index:3;background:#D3D9E6e8;backdrop-filter:blur(6px);margin:0 -16px;padding:14px 16px 8px;border-bottom:1px solid #c3cadb}
 .pg{background:linear-gradient(90deg,#f1f3f8 0,#f1f3f8 34px,#fff 34px);max-width:794px;min-height:1123px;margin:10px auto 40px;padding:48px 56px;box-shadow:0 2px 14px #0003;font-size:18px;line-height:var(--lh,1.35);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace}
 @media(max-width:700px){.pg{padding:20px 14px;min-height:80vh}}
 .le{outline:none;min-height:400px}.ln{white-space:pre-wrap;min-height:1.35em}
@@ -49,22 +49,25 @@ textarea.ac:disabled{opacity:1}textarea.ac::selection{background:#1f6feb44;color
 .rib button{padding:6px 9px;min-width:34px}.rib select,.rib input{padding:6px;max-width:170px}.rib .bi{font-family:Georgia,serif}
 .rib .cs{width:22px;height:22px;border-radius:5px;border:2px solid #fff;box-shadow:0 0 0 1px #9aa3bf;padding:0;min-width:0}
 .rib button.on{background:#1F2A4D;color:#fff;box-shadow:0 0 0 2px #C58A2B}.cnt{margin-left:auto;font-size:12px;color:#4b5575;font-weight:600}
-.tb .top{align-items:center}.tb #ti,.tb #al{flex:none;width:170px;min-width:0}.tb .et .box{min-width:150px}
-.gr{display:flex;align-items:center;gap:4px;padding:4px 8px 15px;border:1px solid #aab3cf;border-radius:10px;position:relative;background:#dfe4f1}
-.gr::after{content:attr(data-g);position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:10px;color:#4b5575;font-weight:600}
-.rib{gap:8px}.rib button{padding:3px 7px;min-width:30px;height:30px}.rib select{padding:3px 6px;height:30px}.rib input[type=text]{padding:3px 6px;height:30px}
-.dd{position:relative;display:inline-block}.pp{position:absolute;top:100%;left:0;z-index:9;background:#fff;border-radius:12px;box-shadow:0 8px 28px #0004;padding:10px;min-width:170px;margin-top:4px}.pp[hidden]{display:none}
+.tb .top{align-items:center;margin-bottom:10px}.tb #ti{flex:1 1 220px;min-width:150px;font-weight:700;font-size:16px}.tb #al{flex:0 1 190px;min-width:0}.tb .et .box{min-width:150px}
+.tb .acc{margin-left:auto;display:flex;gap:8px}
+@media(max-width:760px){.tb{padding:10px 8px 6px;margin:0 -8px}.tb .top{gap:6px}.tb #al{flex:1 1 140px}.tb .et{flex:1 1 160px}.tb .et .box{min-width:0;width:100%}.tb .acc{width:100%}.tb .acc button{flex:1}
+  .rib{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}.gr{flex:none}.tabs .der{margin-left:0;width:100%;justify-content:space-between}#editor.ed{padding:0 8px 8px}}
+.gr{display:flex;align-items:center;gap:4px;padding:5px 8px 16px;border:1px solid #B9C1D6;border-radius:var(--r-m);position:relative;background:#E6EAF3}
+.gr::after{content:attr(data-g);position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:10.5px;color:#4b5575;font-weight:700}
+.rib{gap:8px}.rib button{padding:3px 7px;min-width:32px;height:32px;min-height:0;border-radius:var(--r-s)}.rib select{padding:3px 6px;height:32px;min-height:0;border-radius:var(--r-s)}.rib input[type=text]{padding:3px 6px;height:32px;min-height:0;border-radius:var(--r-s)}
+.dd{position:relative;display:inline-block}.pp{position:absolute;top:100%;left:0;z-index:9;background:#fff;border:1px solid var(--linea);border-radius:var(--r-m);box-shadow:var(--sombra-2);padding:10px;min-width:170px;margin-top:4px}.pp[hidden]{display:none}
 .pal{display:grid;grid-template-columns:repeat(6,26px);gap:6px}.rib .pal button{width:26px;height:26px;padding:0;min-width:0;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px #9aa3bf}
 .pie{display:flex;gap:6px;margin-top:8px;align-items:center}.mas{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}.mas input{width:24px;height:24px;padding:0;border:0;background:none}
 .ia{font-weight:800;font-size:14px;line-height:1}.cb{display:block;width:16px;height:4px;border-radius:2px;margin-top:2px}.rib .dd>button{flex-direction:column;gap:0}
 .menuAa{display:grid;gap:4px}.menuAa button{justify-content:flex-start}
 .tonbox{width:270px}.tr1{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tinfo{font-size:12px;color:#4b5575;margin:6px 0 4px;font-weight:600}
 .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.kq{padding:6px 0;min-width:0;background:#e1e6f2;color:#1F2A4D}.kq.on{background:#1F2A4D;color:#fff}.kq.or{box-shadow:0 0 0 2px #C58A2B}
-.tabs{display:flex;align-items:center;gap:6px;margin:6px 0 2px;flex-wrap:wrap}.tabs .der{margin-left:auto;display:flex;align-items:center;gap:8px}.tabs select,.tabs button{height:30px;padding-top:3px;padding-bottom:3px}
+.tabs{display:flex;align-items:center;gap:6px;margin:6px 0 2px;flex-wrap:wrap}.tabs .der{margin-left:auto;display:flex;align-items:center;gap:8px}.tabs select,.tabs button{height:34px;min-height:0;padding-top:3px;padding-bottom:3px}
 .btnk{color:#b3261e;font-size:18px;line-height:1}.on .btnk{color:#fff}
 .blq{margin:10px 0}.blq b{color:#b3261e}.it{border-left:4px solid #c58a2b;padding-left:8px}
 .et{position:relative;display:inline-flex;gap:4px}.et .box{display:flex;flex-wrap:wrap;gap:4px;align-items:center;border:1px solid #c3cae0;background:#fff;border-radius:10px;padding:6px 8px;min-width:240px}.et .box input{border:0;outline:none;min-width:120px;flex:1;padding:2px;background:transparent}.et .box input::placeholder{color:#1d2233;opacity:1;font-weight:600}
-.et .box{padding-right:34px}
+.et .box{padding:3px 34px 3px 8px;min-height:40px}.et .box input{min-height:0;box-shadow:none}
 .et #eta{position:absolute;right:3px;top:3px;bottom:3px;width:30px;min-width:0;padding:0;background:transparent;color:#1d2233}
 .et #eta:hover{background:#e1e6f2}
 .et .lista label{border-radius:8px;cursor:pointer}
@@ -458,10 +461,10 @@ export function abrir(s,alCerrar){
     const dd=(n,btn,body)=>`<span class="dd">${btn}<div class="pp" data-pp="${n}" ${popAb===n?'':'hidden'}>${body}</div></span>`;
     const pal=(f,cols)=>`<div class="pal">${cols.map(c=>`<button class="fb" data-f="${f}:${c}" style="background:${c}" title="${c}" aria-label="${c}"></button>`).join('')}</div>`;
     const act=ed.tonoAct||ed.tono,fam=modo==='letra'?ed.fuente:ed.fuenteA;
-    ov.innerHTML=`<div class="tb"><div class="barra top"><input id="ti" placeholder="T\u00edtulo" value="${esc(ed.titulo)}"><select id="al">${A.map(a=>`<option value="${a.id}" ${a.id===ed.albumId?'selected':''}>${esc(a.nombre)}</option>`).join('')}</select>
+    ov.innerHTML=`<div class="tb"><div class="barra top"><input id="ti" placeholder="T\u00edtulo de la canci\u00f3n" aria-label="T\u00edtulo de la canci\u00f3n" value="${esc(ed.titulo)}"><select id="al" aria-label="\u00c1lbum" title="\u00c1lbum">${A.map(a=>`<option value="${a.id}" ${a.id===ed.albumId?'selected':''}>${esc(a.nombre)}</option>`).join('')}</select>
         <div class="et"><div class="box"><input id="eq" value="${esc(eq)}" placeholder="${esc(resumen())}" autocomplete="off" aria-label="Buscar etiqueta"></div><button class="sec" id="eta" aria-label="Ver etiquetas">${svgI('<path d="M6 9l6 6 6-6"/>',14)}</button><div class="lista" ${verEt?'':'hidden'}>${listaEt()}</div></div>
         <span class="dd"><button class="sec" id="tonb" data-pop="ton" ${modo==='letra'?'disabled title="La tonalidad se cambia en la pesta\u00f1a Acordes"':''}>Tonalidad${act?' \u00b7 <b>'+esc(act)+'</b>':''}</button><div class="pp tonbox" data-pp="ton" ${popAb==='ton'?'':'hidden'}></div></span>
-        <span style="margin-left:auto;display:flex;gap:8px"><button id="ok">Guardar</button><button class="sec" id="no">Cancelar</button></span></div>
+        <span class="acc"><button class="sec" id="no">Cancelar</button><button id="ok">Guardar canci\u00f3n</button></span></div>
       <div class="rib" ${plegada?'hidden':''}>
         <div class="gr" data-g="Texto"><select id="ff" title="Tipo de letra">${optsFuente()}</select><input type="text" id="sz" list="tams" placeholder="18" title="Tama\u00f1o de la l\u00ednea" style="flex:none;min-width:0;width:50px;text-align:center"><datalist id="tams">${[8,10,12,14,16,18,20,22,24,28,32,36,40,48,60].map(n=>`<option value="${n}">`).join('')}</datalist>${fb('s-','A\u2212','Reducir tama\u00f1o (Ctrl+Mays+&lt;)')}${fb('s+','A+','Aumentar tama\u00f1o (Ctrl+Mays+&gt;)')}
           ${fb('b','<b>B</b>','Negrita (Ctrl+B)')}${fb('i','<i class="bi">I</i>','Cursiva (Ctrl+I)')}${fb('u','<u>U</u>','Subrayado (Ctrl+U)')}
@@ -473,9 +476,9 @@ export function abrir(s,alCerrar){
           <select id="lh" title="Interlineado">${[1,1.15,1.35,1.5,2].map(n=>`<option value="${n}" ${n===(ed.lh||1.35)?'selected':''}>${n}</option>`).join('')}</select>
           ${dd('aa',`<button class="sec fb" data-pop="aa" title="May\u00fasculas y min\u00fasculas">Aa</button>`,`<div class="menuAa"><button class="sec fb" data-f="case:up">MAY\u00daSCULAS</button><button class="sec fb" data-f="case:low">min\u00fasculas</button><button class="sec fb" data-f="case:cap">Cada Palabra</button></div>`)}</div>
         <div class="gr" data-g="Herramientas">${fb('undo',svgI(UNDO,16),'Deshacer (Ctrl+Z)')}${fb('redo',svgI(REDO,16),'Rehacer (Ctrl+Y)')}${fb('pincel',svgI(BRUSH,16),'Copiar formato (selecciona, pulsa, selecciona otro y vuelve a pulsar)')}${fb('clear','T<sub>x</sub>','Borrar formato')}<button class="sec" data-bus title="Buscar y reemplazar">${svgI(FIND,16)} Buscar</button></div></div>
-      <div class="tabs"><button class="${modo==='letra'?'':'sec'}" id="ml">Letra</button><button class="${modo==='acordes'?'':'sec'}" id="ma">Acordes</button>
-        <span class="der"><select id="zm" title="Zoom de la hoja">${[50,75,100,125,150,200].map(n=>`<option value="${n}" ${n===zoom?'selected':''}>${n}%</option>`).join('')}</select><span id="cnt" class="cnt"></span><button class="sec" data-plegar title="Mostrar u ocultar la barra de formato">${plegada?'\u25BC':'\u25B2'}</button></span></div></div>
-      <div class="pg" style="--lh:${ed.lh||1.35};zoom:${zoom/100};${cssFuente(fam)?'font-family:'+esc(cssFuente(fam))+';':''}"><div id="le" class="le" contenteditable="true" spellcheck="false">${hojaHtml()}</div></div>`;
+      <div class="tabs" role="tablist" aria-label="Hoja"><button class="${modo==='letra'?'':'sec'}" id="ml" role="tab" aria-selected="${modo==='letra'}">Letra</button><button class="${modo==='acordes'?'':'sec'}" id="ma" role="tab" aria-selected="${modo==='acordes'}">Acordes</button>
+        <span class="der"><select id="zm" title="Zoom de la hoja">${[50,75,100,125,150,200].map(n=>`<option value="${n}" ${n===zoom?'selected':''}>${n}%</option>`).join('')}</select><span id="cnt" class="cnt"></span><button class="sec" data-plegar title="Mostrar u ocultar la barra de formato" aria-label="Mostrar u ocultar la barra de formato">${plegada?'\u25BC':'\u25B2'}</button></span></div></div>
+      <div class="pg" style="--lh:${ed.lh||1.35};zoom:${zoom/100};${cssFuente(fam)?'font-family:'+esc(cssFuente(fam))+';':''}"><div id="le" class="le" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="${modo==='letra'?'Letra':'Acordes'} de la canci\u00f3n">${hojaHtml()}</div></div>`;
     cnt();refTono();marcarBotones();
   };
 
