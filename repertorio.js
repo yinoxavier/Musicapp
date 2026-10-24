@@ -1,15 +1,9 @@
 // ===== PANTALLA: REPERTORIO (misa y evento, vista previa y PDF) =====
-import {$,esc,guardar,crear,escuchar,eliminar,vistas,ic,modal} from "./base.js";
+import {$,esc,guardar,crear,escuchar,eliminar,vistas,ic,modal,aviso} from "./base.js";
+import {MOM,MES,fechaLarga,cancion} from "./hoja.js";
 
 const st=document.createElement('style');
 st.textContent=`[data-vista=repertorio] .rcols{display:grid;grid-template-columns:400px minmax(0,1fr);gap:24px;align-items:start}
-.hojap{background:#fff;max-width:794px;padding:44px 52px;box-shadow:var(--sombra-2);border-radius:6px;min-height:520px;font-size:18px;line-height:1.35;margin:0 auto;overflow-x:auto}
-.rt{margin:0 0 4px;font-size:30px}.rf{color:var(--gris);margin-bottom:22px}.rf::first-letter{text-transform:uppercase}.blk{margin:0 0 18px}
-.lab{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--oro-texto);border-bottom:1px solid var(--linea);margin-bottom:6px;padding-bottom:3px}
-.st{font-family:var(--fuente-titulo);font-weight:600;font-size:20px;color:var(--azul);margin:8px 0 4px}.st small{font:600 12.5px var(--fuente);color:var(--gris);margin-left:10px}
-.sg{font-family:ui-monospace,SFMono-Regular,Menlo,Arial,"Courier New",monospace}.rl,.rc{font-family:inherit;white-space:pre-wrap;line-height:var(--lh,1.35)}.rc{white-space:pre;font-weight:700;color:#b3261e}
-.falta{color:var(--rojo);font-weight:600;font-size:13px;font-style:normal}.sg{margin-bottom:14px}
-.hojap .falta{font-size:15px;color:var(--gris);text-align:center;padding:60px 20px;border:1px dashed var(--linea-2);border-radius:var(--r-m)}
 [data-vista=repertorio] .mrow{display:flex;align-items:center;gap:6px;padding:9px 0;border-bottom:1px solid var(--linea)}
 [data-vista=repertorio] .mrow:last-child{border-bottom:0}
 .mn{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.mn b{font-size:14.5px}.mn span{color:var(--azul);font-weight:600;font-size:14.5px}.mn small,.fila small{color:var(--gris);font-weight:500;font-size:12.5px}
@@ -26,8 +20,6 @@ st.textContent=`[data-vista=repertorio] .rcols{display:grid;grid-template-column
 .rcard .tipo{display:inline-block;background:var(--suave);color:var(--azul);border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700;margin-top:4px}
 .fila{display:flex;flex-direction:column;align-items:flex-start;width:100%;background:var(--capa);color:var(--tx);margin-bottom:6px;text-align:left;font-weight:600}.fila:hover{background:var(--suave);filter:none}
 .lista2{max-height:50vh;overflow:auto;margin-top:10px}
-.modo-full #izq{display:none!important}
-.modo-full .rcols{grid-template-columns:1fr!important}
 @media(max-width:960px){[data-vista=repertorio] .rcols{grid-template-columns:minmax(0,1fr)}.hojap{padding:24px 20px;min-height:300px}}
 @media print{header,#aviso,#izq,.noprint,.mo,.falta,.blk:has(.falta){display:none!important}main{padding:0;max-width:none}.rcols{display:block!important}.hojap{box-shadow:none;padding:0}
 @page{size:A4;margin:14mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}`;
@@ -37,43 +29,11 @@ const ico=(p,s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="n
 const SHF='<path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>';
 const PRN='<path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/>';
 const EXP='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>';
-const FUL='<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>';
+const SHR='<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>';
 
-const MOM=[['entrada','Canto de entrada'],['kyrie','Kyrie'],['gloria','Gloria'],['aclamacion','Aclamaci\u00f3n'],['peticiones','Peticiones'],['ofertorio','Ofertorio'],['santo','Santo'],['elevacion','Elevaci\u00f3n'],['anunciamos','Anunciamos'],['amen','Am\u00e9n'],['cordero','Cordero'],['comunion','Comuni\u00f3n'],['gracias','Acci\u00f3n de gracias'],['maria','Canto a Mar\u00eda']];
-const MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],DIA=['domingo','lunes','martes','mi\u00e9rcoles','jueves','viernes','s\u00e1bado'];
-const fechaLarga=f=>{if(!f)return'';const [y,m,d]=f.split('-').map(Number);return DIA[new Date(y,m-1,d).getDay()]+' '+d+' de '+MES[m-1]+' de '+y};
 const fechaCorta=f=>{if(!f)return'Sin fecha';const [y,m,d]=f.split('-');return d+'/'+m+'/'+y};
 
-const FF={'Courier New':'Arial,Courier,monospace','Arial':'Arial,"Courier New",monospace','Lucida Console':'"Lucida Console",Monaco,monospace','Menlo / Monaco':'Menlo,Monaco,"Courier New",monospace'};
-const fcss=n=>!n?'':(FF[n]||('"'+String(n).replace(/["\\<>]/g,'')+'",sans-serif'));
-const OKC=/^(#[0-9a-f]{3,8}|rgba?\([\d\s,.]+\))$/i;
-const est=r=>(r.k?'font-weight:700;color:#b3261e;':'')+(r.b?'font-weight:700;':'')+(r.i?'font-style:italic;':'')+((r.u||r.x)?'text-decoration:'+[r.u&&'underline',r.x&&'line-through'].filter(Boolean).join(' ')+';':'')+(OKC.test(r.c||'')?'color:'+r.c+';':'')+(OKC.test(r.h||'')?'background-color:'+r.h+';':'');
-const hl=(c,t)=>{c=c||[];t=String(t||'');let h='',i=0;while(i<t.length){let j=i;while(j<t.length&&(c[j]||0)===(c[i]||0))j++;h+=OKC.test(c[i]||'')?`<span style="color:${c[i]}">${esc(t.slice(i,j))}</span>`:esc(t.slice(i,j));i=j}return h};
-
-function hojaAcordes(c){
-  const f=fcss(c.fuenteA),tono=c.tonoAct||c.tono;
-  let h=`<div class="sg" style="${f?'font-family:'+f+';':''}${c.lh?'--lh:'+c.lh+';':''}"><div class="st">${esc(c.titulo)}${tono?`<small>Tono: ${esc(tono)}</small>`:''}</div>`;
-  c.lineasA.forEach(l=>{h+=`<div class="rl" style="font-size:${l.s||18}px;padding-left:${(l.n||0)*28}px;${l.a?'text-align:'+l.a+';':''}">${l.r.map(x=>`<span style="${est(x)}">${esc(x.t)}</span>`).join('')||'&nbsp;'}</div>`});
-  return h+'</div>';
-}
-function cancion(c,ac){
-  if(ac&&c.lineasA&&c.lineasA.some(l=>l.r.length))return hojaAcordes(c);
-  const cc=c.cc||{},blq=(n,t,k)=>`<div class="rc"><b>${n}:</b>${hl(cc[k],t)}</div>`;
-  const L=c.lineas||(c.letra||'').split('\n').map(t=>({r:t?[{t}]:[]})),it=c.interludios||[];
-  let h=`<div class="sg" style="${fcss(ac?c.fuenteA:c.fuente)?'font-family:'+fcss(ac?c.fuenteA:c.fuente)+';':''}${c.lh?'--lh:'+c.lh+';':''}"><div class="st">${esc(c.titulo)}${ac&&(c.tonoAct||c.tono)?`<small>Tono: ${esc(c.tonoAct||c.tono)}</small>`:''}</div>`;
-  if(ac&&c.intro&&c.intro.trim())h+=blq('Intro',c.intro,'intro');
-  L.forEach((l,i)=>{
-    const z=l.s||18,ca=ac&&c.ac&&c.ac[i];
-    if(ca&&ca.trim())h+=`<div class="rc" style="font-size:${z}px;padding-left:${(l.n||0)*28}px">${hl(cc['a'+i],ca)}</div>`;
-    h+=`<div class="rl" style="font-size:${z}px;padding-left:${(l.n||0)*28}px;${!ac&&l.a?'text-align:'+l.a+';':''}">${l.r.map(r=>`<span style="${est(r)}">${esc(r.t)}</span>`).join('')||'&nbsp;'}</div>`;
-    if(ac)it.filter(x=>x.despues===i).forEach(x=>{if((x.texto||'').trim())h+=blq('Interludio',x.texto,'i:'+x.id)});
-  });
-  if(ac)it.filter(x=>x.despues<0||x.despues>=L.length).forEach(x=>{if((x.texto||'').trim())h+=blq('Interludio',x.texto,'i:'+x.id)});
-  if(ac&&c.final!=null&&String(c.final).trim())h+=blq('Final',c.final,'final');
-  return h+'</div>';
-}
-
-let C=[],T=[],A=[],R=[],el=null,rep=null,tm=null,fullMode=false,fullZoom=1,pinchDist=0,baseZoom=1;
+let C=[],T=[],A=[],R=[],el=null,rep=null,tm=null;
 const alb=c=>A.find(a=>a.id===c.albumId)?.nombre||'';
 const titAlb=c=>`<span>${esc(c.titulo)}</span>`+(alb(c)?`<small>${esc(alb(c))}</small>`:'');
 const ref=()=>{if(el)rep?pder():lista()};
@@ -89,13 +49,13 @@ const guarda=()=>{clearTimeout(tm);tm=setTimeout(flush,300)};
 function flush(){clearTimeout(tm);tm=null;if(rep){const {id,...d}=rep;guardar('repertorios',id,d,false)}}
 
 vistas.repertorio=e=>{
-  el=e;rep=null;fullMode=false;el.onclick=clic;el.oninput=entra;el.onchange=entra;
+  el=e;rep=null;el.onclick=clic;el.oninput=entra;el.onchange=entra;
   const a=sessionStorage.getItem('repAbrir'),f=sessionStorage.getItem('repFecha');
   sessionStorage.removeItem('repAbrir');sessionStorage.removeItem('repFecha');
   if(a&&R.find(x=>x.id===a))abrir(a);else if(f)nuevo(f);else lista();
 };
-addEventListener('hashchange',()=>{if(location.hash!=='#repertorio'){flush();el=null;rep=null;fullMode=false;fullZoom=1}});
-addEventListener('reinicio',e=>{if(e.detail==='repertorio'&&el){flush();rep=null;fullMode=false;lista()}});
+addEventListener('hashchange',()=>{if(location.hash!=='#repertorio'){flush();el=null;rep=null}});
+addEventListener('reinicio',e=>{if(e.detail==='repertorio'&&el){flush();rep=null;lista()}});
 
 function lista(){
   el.className="";
@@ -108,30 +68,11 @@ function lista(){
 async function nuevo(f){const d={nombre:'Nuevo repertorio',fecha:f||'',tipo:'misa',acordes:false,misa:{},secciones:[]};const r=await crear('repertorios',d);rep={id:r.id,...d};editor()}
 function abrir(id){rep=structuredClone(R.find(x=>x.id===id));rep.misa=rep.misa||{};rep.secciones=rep.secciones||[];editor()}
 function editor(){
-  el.className=fullMode?"modo-full":"";
-  if(!fullMode) fullZoom = 1; // Reiniciar zoom al salir de pantalla completa
-  el.innerHTML=`<div class="rcols"><section class="c2" id="izq"></section><section><div class="ch2 noprint" id="btn-full-container" ${fullMode ? 'style="position:fixed;top:15px;right:15px;z-index:9999;background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);"' : ''}><h2 style="margin:0; ${fullMode ? 'display:none;' : ''}">Vista previa</h2><div style="display:flex;gap:6px;"><button data-full class="sec">${ico(FUL)} ${fullMode?'Salir vista completa':'Vista completa'}</button><button data-print>${ico(PRN)} Descargar PDF</button></div></div><div class="hojap" id="hoja" style="transform: scale(${fullZoom}); transform-origin: top center; transition: transform 0.05s ease-out;"></div></section></div>`;
+  el.className='';
+  el.innerHTML=`<div class="rcols"><section class="c2" id="izq"></section><section><div class="ch2 noprint"><h2>Vista previa</h2><div class="mb"><button class="ic" data-share aria-label="Compartir" title="Compartir">${ico(SHR,18)}</button><button class="ic" data-print aria-label="Descargar PDF" title="Descargar PDF">${ico(EXP,18)}</button></div></div><div class="hojap" id="hoja"></div></section></div>`;
   pizq();pder();
-  
-  // Agregar listeners táctiles para zoom por gestos en pantalla completa
-  const hojaEl = $('#hoja');
-  if(hojaEl){
-    hojaEl.ontouchstart = e => {
-      if(fullMode && e.touches.length === 2){
-        pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        baseZoom = fullZoom;
-      }
-    };
-    hojaEl.ontouchmove = e => {
-      if(fullMode && e.touches.length === 2 && pinchDist > 0){
-        e.preventDefault();
-        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        fullZoom = Math.min(Math.max(0.5, baseZoom * (dist / pinchDist)), 2.5); // Limita el zoom entre 50% y 250%
-        hojaEl.style.transform = `scale(${fullZoom})`;
-      }
-    };
-  }
-}function pizq(){
+}
+function pizq(){
   const i=$('#izq');if(!i||!rep)return;
   const fila=([id,n])=>{const c=C.find(x=>x.id===rep.misa[id]);
     return`<div class="mrow"><div class="mn"><b>${n}</b>${c?titAlb(c):'<em class="falta">Sin canci\u00f3n</em>'}</div><button class="ic" data-pick="${id}" aria-label="Elegir canci\u00f3n para ${n}" title="Elegir">${ic('edt',15)}</button><button class="ic" data-rnd="${id}" aria-label="Canci\u00f3n al azar para ${n}" title="Al azar">${ico(SHF,15)}</button>${c?`<button class="ic rj" data-rm="${id}" aria-label="Quitar canci\u00f3n de ${n}" title="Quitar">${ic('x',15)}</button>`:''}</div>`};
@@ -156,6 +97,22 @@ function pder(){
   h.innerHTML=`<h1 class="rt">${esc(rep.nombre||'')}</h1><div class="rf">${esc(fechaLarga(rep.fecha))}</div>${b}`;
 }
 
+// compartir: en el celular abre el menú de compartir del teléfono (WhatsApp, copiar enlace...).
+// En la computadora abre la ventana Compartir en una pestaña nueva y copia el enlace.
+async function compartir(){
+  flush();                                                   // guarda los últimos cambios antes de compartir
+  const url=location.origin+location.pathname+'#ver/'+rep.id,titulo=rep.nombre||'Repertorio';
+  const celular=matchMedia('(pointer:coarse)').matches;
+  if(celular&&navigator.share){
+    try{await navigator.share({title:titulo,text:titulo+(rep.fecha?' \u00b7 '+fechaLarga(rep.fecha):''),url});return}
+    catch(e){if(e&&e.name==='AbortError')return}             // el usuario cerró el menú
+  }
+  let copiado=false;
+  try{await navigator.clipboard.writeText(url);copiado=true}catch(e){}   // se copia ANTES de abrir la pestaña (después la página ya no tiene el foco)
+  window.open(url,'_blank','noopener');
+  aviso(copiado?'Enlace copiado. Ya puedes pegarlo en WhatsApp o en un correo.':'Se abri\u00f3 la ventana para compartir en una pesta\u00f1a nueva.');
+}
+
 function imprimir(){
   const t=document.title;
   document.title=(rep.nombre||'Repertorio')+(rep.fecha?' '+rep.fecha:'');
@@ -164,14 +121,14 @@ function imprimir(){
 }
 
 function clic(e){
-  const b=e.target.closest('[data-nuevo],[data-open],[data-del],[data-back],[data-print],[data-full],[data-tipo],[data-alet],[data-pick],[data-rnd],[data-rm],[data-sadd],[data-sdel],[data-spick],[data-srnd],[data-srm]');
+  const b=e.target.closest('[data-nuevo],[data-open],[data-del],[data-back],[data-print],[data-share],[data-tipo],[data-alet],[data-pick],[data-rnd],[data-rm],[data-sadd],[data-sdel],[data-spick],[data-srnd],[data-srm]');
   if(!b)return;const d=b.dataset,ok=()=>{guarda();pizq();pder()};
   if(d.nuevo!=null)nuevo();
   else if(d.del){const r=R.find(x=>x.id===d.del);eliminar('repertorios',r,'el repertorio "'+(r.nombre||'')+'"')}
   else if(d.open)abrir(d.open);
-  else if(d.back!=null){flush();rep=null;fullMode=false;fullZoom=1;lista()}
+  else if(d.back!=null){flush();rep=null;lista()}
   else if(d.print!=null)imprimir();
-  else if(d.full!=null){fullMode=!fullMode;editor()}
+  else if(d.share!=null)compartir();
   else if(d.tipo){rep.tipo=d.tipo;ok()}
   else if(d.alet!=null){
     if(Object.keys(rep.misa).length&&!confirm('Esto reemplaza las canciones elegidas. \u00bfContinuar?'))return;

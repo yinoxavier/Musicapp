@@ -28,7 +28,7 @@
 // =====================================================================
 import {$,esc,guardar,crear,modal} from "./base.js";
 import {E} from "./estado.js";
-import {ix,MAY,MEN,tokensAcorde,nuevaRaiz,usaSostenidos} from "./musica.js";
+import {ix,MAY,MEN,tokensAcorde,nuevaRaiz,usaSostenidos,transponerChars} from "./musica.js";
 import {FIJAS,PROPOR,cssFuente,OKC,plano,colorOk,CT,CH,svgI,UNDO,REDO,AL_L,AL_C,AL_R,AL_J,IND,OUTD,FIND,BRUSH,MARK} from "./formato.js";
 
 let ed=null;                 // la canción que se está editando (null = ningún editor abierto)
@@ -606,22 +606,8 @@ export function abrir(s,alCerrar){
   const transponer=(d,sostenidos)=>{
     const S=captura();if(!S)leer();                         // sincroniza el modelo con lo escrito
     lineasDe().forEach((l,i,ls)=>{
-      const chars=aChars(l),nuevo=[];let cambio=false,deuda=0;     // deuda: letras de más (+) o de menos (-) por el cambio de nombre
-      for(let j=0;j<chars.length;j++){
-        const c=chars[j];
-        if(c.k&&/[A-G]/.test(c.ch)){
-          const sig=chars[j+1],acc=sig&&(sig.ch==='#'||sig.ch==='b')?sig.ch:'';
-          const nom=nuevaRaiz(c.ch,acc,d,sostenidos);
-          nuevo.push({...c,ch:nom[0]});
-          if(nom[1])nuevo.push({...c,ch:nom[1]});   // el # o b nuevo hereda el formato del acorde (rojo y negrita)
-          if(acc)j++;
-          deuda+=nom.length-(1+acc.length);cambio=true;
-        }
-        else if(c.ch===' '&&deuda>0&&chars[j+1]&&chars[j+1].ch===' '){deuda--;cambio=true}     // el acorde creció: quita un espacio
-        else if(c.ch===' '&&deuda<0){nuevo.push(c,{...c});deuda++;cambio=true}                // el acorde se achicó: añade un espacio
-        else nuevo.push(c);
-      }
-      if(cambio)ls[i]=armar(l,nuevo);
+      const {letras,cambio}=transponerChars(aChars(l),d,sostenidos);   // la transposición vive en musica.js (la usa también la ventana Compartir)
+      if(cambio)ls[i]=armar(l,letras);
     });
     repintaHoja();refTono();                                // refTono ya ve el tono nuevo (se asignó antes de transponer)
     if(S)ponSel(S.a,S.b);

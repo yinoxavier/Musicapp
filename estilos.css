@@ -62,14 +62,14 @@ main{max-width:1180px;margin:auto;padding:28px 28px 48px}
 /* ---------- 3. CONTROLES ---------- */
 button,select,input,textarea{font:inherit;color:inherit}
 button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:var(--alto-control);background:var(--azul);color:#fff;border:0;border-radius:var(--r-m);padding:8px 15px;font-weight:700;font-size:14.5px;line-height:1.2;cursor:pointer;transition:filter .15s,background-color .15s,transform .05s;-webkit-tap-highlight-color:transparent}
-button:hover{filter:brightness(1.22)}
+@media(hover:hover){button:hover{filter:brightness(1.22)}}
 button:active{transform:translateY(1px)}
 button:disabled{opacity:.45;cursor:not-allowed;filter:none;transform:none}
 button.sec{background:var(--suave);color:var(--azul)}
-button.sec:hover{filter:brightness(.95)}
+@media(hover:hover){button.sec:hover{filter:brightness(.95)}}
 button.rojo{background:var(--rojo);color:#fff}
 button.ic{width:38px;height:38px;min-height:0;padding:0;background:var(--suave);color:var(--azul);flex:none}
-button.ic:hover{filter:brightness(.94)}
+@media(hover:hover){button.ic:hover{filter:brightness(.94)}}
 button.ic.rj{color:var(--rojo)}
 button.lnk{background:none;color:var(--azul);text-decoration:underline;text-underline-offset:3px;padding:4px 6px;min-height:0;font-weight:600}
 button svg{flex:none}

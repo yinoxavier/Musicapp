@@ -20,6 +20,12 @@ export function eliminar(col,item,texto,directo){
   $('#aviso').append(d);setTimeout(()=>d.remove(),6000);
 }
 
+// aviso(texto): muestra un mensaje corto abajo durante 4 segundos
+export function aviso(texto){
+  const d=document.createElement('div');d.textContent=texto;
+  $('#aviso').append(d);setTimeout(()=>d.remove(),4000);
+}
+
 // Reduce una foto para guardarla dentro de la base de datos
 export const imagen=(f,max=300)=>new Promise(r=>{
   const i=new Image;
@@ -71,12 +77,14 @@ const MENU=[['calendario','cal','Calendario','Eventos y ensayos'],['repertorio',
 const vista=()=>location.hash.slice(1)||'inicio';
 let vistaAnterior=null;
 function irA(){
-  const v=vista();
-  $('#nav').innerHTML=v==='inicio'?'':MENU.map(([k,i,n])=>`<a href="#${k}" class="${k===v?'on':''}" ${k===v?'aria-current="page"':''}>${ic(i,18)}<span>${n}</span></a>`).join('');
+  const v=vista(),ver=v.startsWith('ver/');            // «ver/ID» = ventana Compartir de un repertorio
+  document.body.classList.toggle('modo-ver',ver);
+  $('#nav').innerHTML=v==='inicio'||ver?'':MENU.map(([k,i,n])=>`<a href="#${k}" class="${k===v?'on':''}" ${k===v?'aria-current="page"':''}>${ic(i,18)}<span>${n}</span></a>`).join('');
   const el=$('#app');el.innerHTML='';el.className='';el.dataset.vista=v;
   el.onclick=el.oninput=el.onchange=el.onkeydown=null;   // quita lo que dejó la pantalla anterior
   const m=MENU.find(x=>x[0]===v);document.title=(m?m[2]+' · ':'')+(cfg.nombre||'Músicapp');
   if(vistaAnterior!==v){window.scrollTo(0,0);vistaAnterior=v}
+  if(ver&&vistas.ver)return vistas.ver(el,v.slice(4));
   (vistas[v]||(e=>e.innerHTML='<div class="c2"><h2>Esta página no existe</h2><p><a href="#inicio">Volver al inicio</a></p></div>'))(el);
 }
 

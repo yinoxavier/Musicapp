@@ -10,6 +10,8 @@
 //   MAY, MEN ........ listas de tonos mayores y menores
 //   tokensAcorde(texto) busca las «palabras» con forma de acorde (E, Em7, D/F#)
 //   nuevaRaiz(letra,acc,n) calcula la nota nueva al transponer una letra A-G
+//   transponerChars(letras,d,sost) transpone una línea (la usan el editor y la ventana Compartir)
+//   raizTono, esMenor, nombreTono  ayudas para nombrar el tono nuevo
 // =====================================================================
 export const S=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],F=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 export const ix=n=>{const k=S.indexOf(n);return k<0?F.indexOf(n):k};
@@ -55,3 +57,28 @@ export function nuevaRaiz(letra,acc,d,sostenidos){
   const usa=(sostenidos===null||sostenidos===undefined)?acc==='#':sostenidos;     // si da igual, respeta lo que ya escribiste
   return (usa?SOST:MAY)[((n%12)+12)%12];
 }
+// transponerChars(letras, d, sostenidos): sube o baja d semitonos los acordes marcados (letras con k) de UNA línea.
+// «letras» es la línea como lista de {ch, ...formato}. Un # o b pegado a la letra cuenta como parte de la nota.
+// Si el nombre del acorde cambia de largo (E → Eb), ajusta los espacios para que los demás acordes no se muevan.
+// Devuelve {letras: la lista nueva, cambio: true si algo cambió}. No modifica la lista original.
+export function transponerChars(chars,d,sostenidos){
+  const nuevo=[];let cambio=false,deuda=0;     // deuda: letras de más (+) o de menos (-) por el cambio de nombre
+  for(let j=0;j<chars.length;j++){
+    const c=chars[j];
+    if(c.k&&/[A-G]/.test(c.ch)){
+      const sig=chars[j+1],acc=sig&&(sig.ch==='#'||sig.ch==='b')?sig.ch:'';
+      const nom=nuevaRaiz(c.ch,acc,d,sostenidos);
+      nuevo.push({...c,ch:nom[0]});
+      if(nom[1])nuevo.push({...c,ch:nom[1]});   // el # o b nuevo hereda el formato del acorde (rojo y negrita)
+      if(acc)j++;
+      deuda+=nom.length-(1+acc.length);cambio=true;
+    }
+    else if(c.ch===' '&&deuda>0&&chars[j+1]&&chars[j+1].ch===' '){deuda--;cambio=true}     // el acorde creció: quita un espacio
+    else if(c.ch===' '&&deuda<0){nuevo.push(c,{...c});deuda++;cambio=true}                // el acorde se achicó: añade un espacio
+    else nuevo.push(c);
+  }
+  return {letras:nuevo,cambio};
+}
+// Nombres de tonos: raizTono('Em') = 'E', esMenor('Em') = true, nombreTono('D', 2, false) = 'E'
+export const raizTono=k=>k.replace(/m$/,''),esMenor=k=>/m$/.test(k);
+export const nombreTono=(base,d,menor)=>(menor?MEN:MAY)[(((ix(raizTono(base))+d)%12)+12)%12];
