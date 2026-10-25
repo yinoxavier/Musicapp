@@ -13,7 +13,8 @@ const SALIR = '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12
 // Carga todas las pantallas a la vez y, cuando están listas, dibuja la pantalla actual
 async function iniciarApp() {
   document.body.classList.remove('sin-sesion');
-  await Promise.all(['base', 'canciones', 'calendario', 'escalas', 'repertorio', 'respaldo', 'ver'].map(m => import(`./${m}.js`)));
+  const [base] = await Promise.all(['base', 'canciones', 'calendario', 'escalas', 'repertorio', 'respaldo', 'ver'].map(m => import(`./${m}.js`)));
+  base.appCargada();
   dispatchEvent(new HashChangeEvent('hashchange'));
   const b = document.createElement('button');
   b.className = 'salir';
@@ -57,7 +58,8 @@ function mostrarLogin() {
 // Ventana Compartir (#ver/ID): se abre SIN login y solo carga lo necesario para ver el repertorio
 async function iniciarVer() {
   document.body.classList.add('modo-ver');
-  await Promise.all(['base', 'ver'].map(m => import(`./${m}.js`)));
+  const [base] = await Promise.all(['base', 'ver'].map(m => import(`./${m}.js`)));
+  base.appCargada();
   dispatchEvent(new HashChangeEvent('hashchange'));
   // Si desde aquí se cambia la dirección a otra parte de la app, se recarga para pasar por el login
   addEventListener('hashchange', () => { if (!location.hash.startsWith('#ver/')) location.reload(); });

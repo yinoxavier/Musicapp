@@ -75,9 +75,12 @@ document.addEventListener('keydown',e=>{
 export const vistas={};
 const MENU=[['calendario','cal','Calendario','Eventos y ensayos'],['repertorio','mus','Repertorio','Misas, eventos y PDF'],['canciones','dsc','Canciones','Letras y acordes'],['escalas','usr','Escalas','Equipos por día']];
 const vista=()=>location.hash.slice(1)||'inicio';
-let vistaAnterior=null;
+let vistaAnterior=null,todoCargado=false;
+// login.js avisa cuando ya se cargaron todas las pantallas (antes de eso no se muestra «Esta página no existe»)
+export const appCargada=()=>{todoCargado=true};
 function irA(){
   const v=vista(),ver=v.startsWith('ver/');            // «ver/ID» = ventana Compartir de un repertorio
+  if(!listo&&!ver)return;                               // espera el nombre y el logo guardados (así no aparece el nombre por defecto y luego cambia)
   document.body.classList.toggle('modo-ver',ver);
   $('#nav').innerHTML=v==='inicio'||ver?'':MENU.map(([k,i,n])=>`<a href="#${k}" class="${k===v?'on':''}" ${k===v?'aria-current="page"':''}>${ic(i,18)}<span>${n}</span></a>`).join('');
   const el=$('#app');el.innerHTML='';el.className='';el.dataset.vista=v;
@@ -85,7 +88,7 @@ function irA(){
   const m=MENU.find(x=>x[0]===v);document.title=(m?m[2]+' · ':'')+(cfg.nombre||'Músicapp');
   if(vistaAnterior!==v){window.scrollTo(0,0);vistaAnterior=v}
   if(ver&&vistas.ver)return vistas.ver(el,v.slice(4));
-  (vistas[v]||(e=>e.innerHTML='<div class="c2"><h2>Esta página no existe</h2><p><a href="#inicio">Volver al inicio</a></p></div>'))(el);
+  (vistas[v]||(e=>{if(todoCargado)e.innerHTML='<div class="c2"><h2>Esta página no existe</h2><p><a href="#inicio">Volver al inicio</a></p></div>'}))(el);
 }
 
 // ===== INICIO (logo, nombre y 4 botones) =====
