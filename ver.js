@@ -5,6 +5,8 @@
 //  menú de la app, con:
 //   - un botón «Acordes» para mostrarlos u ocultarlos
 //   - en cada canción, «Tono: X» se puede tocar para transponer esa canción
+//   - en los eventos, junto a cada sección, un botón para ver su escala (equipo)
+//   - en el celular, la barra de arriba se oculta al bajar y vuelve al subir
 //
 //  IMPORTANTE: todo lo que se cambia aquí (acordes, tonos, zoom) vive solo
 //  en la pantalla de quien lo toca. No se guarda en Firebase, no cambia la
@@ -19,6 +21,7 @@
 // =====================================================================
 import {$,esc,escuchar,vistas} from "./base.js";
 import {MOM,fechaLarga,cancion} from "./hoja.js";
+import {textoEquipo,htmlMiembros,alCambiarEquipos} from "./equipos.js";
 import {MAY,MEN,usaSostenidos,tokensAcorde,transponerChars,raizTono,esMenor,nombreTono,ix} from "./musica.js";
 
 // ---------- 1. ESTILOS ----------
@@ -26,7 +29,15 @@ const st=document.createElement('style');
 st.textContent=`.modo-ver header,.modo-ver #nav{display:none!important}
 .modo-ver main{max-width:none;padding:0 0 48px}
 .vbar{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:12px;background:var(--blanco);border-bottom:1px solid var(--linea);box-shadow:var(--sombra-1);padding:10px max(16px,calc((100% - 860px)/2))}
+.vbar{transition:transform .25s ease}
+.vbar.oculta{transform:translateY(calc(-100% - 4px))}
 .vbar .vt2{flex:1;min-width:0}
+.labx{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.labx .tdd{margin-left:0;text-transform:none;letter-spacing:0}
+.eq-b{min-height:28px;padding:2px 10px;font:700 12.5px var(--fuente);background:var(--oro-claro);color:var(--azul);border:1px solid #E6CF9E;border-radius:999px;gap:5px;text-transform:none;letter-spacing:0}
+.eq-b[aria-expanded=true]{background:var(--azul);color:#fff;border-color:var(--azul)}
+.tpan.epan{left:auto;right:0}
+.tpan h3{font-family:var(--fuente);font-size:15px;font-weight:800;color:var(--azul);margin:0 0 10px}
 .vbar h1{font-size:20px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vbar small{display:block;color:var(--gris);font-weight:600;font-size:13px}
 .vbar small::first-letter{text-transform:uppercase}
@@ -61,6 +72,7 @@ st.textContent=`.modo-ver header,.modo-ver #nav{display:none!important}
   .vzona .hojap{padding:22px 16px;border-radius:10px}
   .tpan{position:fixed;left:10px;right:10px;top:auto;bottom:calc(10px + env(safe-area-inset-bottom));width:auto;box-shadow:var(--sombra-3);padding:16px}
   .tpan .keys2 button{min-height:40px}
+  .tpan.epan{left:10px;right:10px}
 }
 @media print{.vbar,.tdd{display:none!important}.vzona{padding:0}.vzona .hojap{box-shadow:none;padding:0}}`;
 document.head.append(st);
@@ -69,7 +81,9 @@ document.head.append(st);
 let R=null,C=null,el=null,id=null;
 // Lo que cambia cada persona en su pantalla. Se pierde al recargar (a propósito).
 const local={acordes:null,tonos:{},abierto:null,zoom:1};
+let barraOculta=false;
 escuchar('repertorios',l=>{R=l;pintar()});
+alCambiarEquipos(()=>pintar());
 escuchar('canciones',l=>{C=l;pintar()});
 
 vistas.ver=(e,rid)=>{
@@ -119,7 +133,7 @@ const medio=d=>{const n=d>6?d-12:d;if(!n)return '';const a=Math.abs(n),t=(a>=2?M
 
 // Las canciones del repertorio, en orden, cada una con una clave propia (así cada una se transpone por separado)
 function bloques(r){
-  if(r.tipo==='evento')return (r.secciones||[]).map(s=>({titulo:s.nombre||'Sección',items:(s.canciones||[]).map((cid,i)=>({clave:'s:'+s.id+':'+i+':'+cid,cid}))}));
+  if(r.tipo==='evento')return (r.secciones||[]).map(s=>({titulo:s.nombre||'Sección',id:s.id,escala:s.escala,items:(s.canciones||[]).map((cid,i)=>({clave:'s:'+s.id+':'+i+':'+cid,cid}))}));
   const m=r.misa||{};
   return MOM.filter(([k])=>m[k]).map(([k,n])=>({titulo:n,items:[{clave:'m:'+k+':'+m[k],cid:m[k]}]}));
 }
@@ -133,6 +147,13 @@ function panel(c,clave){
   return `<div class="tpan" role="dialog" aria-label="Cambiar tono de ${esc(c.titulo)}"><div class="fila3">${pasos}</div>${info}${teclas}
     <div class="pie2"><button class="sec" data-orig data-clave="${clave}">Volver al original</button><button data-cerrar>Listo</button></div>
     <p class="nota">Solo cambia en tu pantalla.</p></div>`;
+}
+
+// Cuadro con la escala (equipo) de una sección. Solo en los eventos.
+function botonEquipo(b){
+  const t=textoEquipo(b.escala);if(!t)return '';
+  const k='eq:'+b.id,abierto=local.abierto===k;
+  return `<span class="tdd"><button class="eq-b" data-eqb="${k}" aria-expanded="${abierto}" aria-label="Ver la escala de ${esc(b.titulo)}">${svg('<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',14)} Escala ${svg('<path d="M6 9l6 6 6-6"/>',12)}</button>${abierto?`<div class="tpan epan" role="dialog" aria-label="Escala de ${esc(b.titulo)}"><h3>${esc(t)}</h3>${htmlMiembros(b.escala)}<div class="pie2" style="justify-content:flex-end"><button data-cerrar>Listo</button></div></div>`:''}</span>`;
 }
 
 function pintar(){
@@ -150,9 +171,9 @@ function pintar(){
       const tono=t=>!transponible(c0)?'':`<span class="tdd"><button class="tono-b" data-tono="${clave}" aria-expanded="${abierto}" aria-label="Cambiar tono de ${esc(c0.titulo)}${t?', ahora '+esc(t):''}">${t?`Tono: ${esc(t)}`:'Tono'}${d?` <span class="dif">${medio(d)}</span>`:''} ${svg('<path d="M6 9l6 6 6-6"/>',13)}</button>${abierto?panel(c0,clave):''}</span>`;
       return cancion(c,ac,{tono});
     }).join('');
-    return canciones?`<div class="blk"><div class="lab">${esc(b.titulo)}</div>${canciones}</div>`:'';
+    return canciones?`<div class="blk"><div class="lab labx"><span>${esc(b.titulo)}</span>${r.tipo==='evento'?botonEquipo(b):''}</div>${canciones}</div>`:'';
   }).join('')||'<div class="falta">Este repertorio aún no tiene canciones.</div>';
-  el.innerHTML=`<div class="vbar"><div class="vt2"><h1>${esc(r.nombre||'Repertorio')}</h1>${r.fecha?`<small>${esc(fechaLarga(r.fecha))}</small>`:''}</div>
+  el.innerHTML=`<div class="vbar${barraOculta?' oculta':''}"><div class="vt2"><h1>${esc(r.nombre||'Repertorio')}</h1>${r.fecha?`<small>${esc(fechaLarga(r.fecha))}</small>`:''}</div>
       <button class="vac2" data-acordes aria-pressed="${ac}"><span class="vchk2">${ac?svg('<path d="M20 6L9 17l-5-5"/>',12):''}</span>Acordes</button></div>
     <div class="vzona"><div class="hojap" id="vh" style="zoom:${local.zoom}">${hoja}</div></div>`;
   zoomTactil();
@@ -165,18 +186,38 @@ function repinta(sel){pintar();if(sel){const b=el&&el.querySelector(sel);if(b)b.
 function clic(e){
   const b=e.target.closest('button');
   if(!b){if(local.abierto&&!e.target.closest('.tpan')){local.abierto=null;pintar()}return}
+  if(b.dataset.eqb){const k=b.dataset.eqb;local.abierto=local.abierto===k?null:k;return repinta(`[data-eqb="${k}"]`)}
   const d=b.dataset,c=k=>C.find(x=>x.id===k.split(':').pop());
   if(d.acordes!=null){local.acordes=!local.acordes;local.abierto=null;return repinta('[data-acordes]')}
   if(d.tono){local.abierto=local.abierto===d.tono?null:d.tono;return repinta(`[data-tono="${d.tono}"]`)}
-  if(d.cerrar!=null){const k=local.abierto;local.abierto=null;return repinta(`[data-tono="${k}"]`)}
+  if(d.cerrar!=null){const k=local.abierto;local.abierto=null;return repinta(botonDe(k))}
   if(d.paso){local.tonos[d.clave]=mod((local.tonos[d.clave]||0)+ +d.paso);return repinta(`[data-paso="${d.paso}"][data-clave="${d.clave}"]`)}
   if(d.ir){const s=c(d.clave);local.tonos[d.clave]=mod(ix(raizTono(d.ir))-ix(raizTono(escrito(s))));return repinta(`[data-ir="${d.ir}"][data-clave="${d.clave}"]`)}
   if(d.orig!=null){const s=c(d.clave),o=original(s),w=escrito(s);local.tonos[d.clave]=o&&w?mod(ix(raizTono(o))-ix(raizTono(w))):0;return repinta(`[data-orig][data-clave="${d.clave}"]`)}
   if(local.abierto&&!b.closest('.tpan')){local.abierto=null;pintar()}
 }
+// Tocar en CUALQUIER parte de la pantalla (también fuera de la hoja) cierra el cuadro abierto
+document.addEventListener('click',e=>{
+  if(!el||!local.abierto||el.contains(e.target))return;   // lo de dentro de la hoja ya lo maneja clic()
+  local.abierto=null;pintar();
+},true);   // en fase de captura: se revisa ANTES de que clic() redibuje la hoja
+const botonDe=k=>k&&k.startsWith('eq:')?`[data-eqb="${k}"]`:`[data-tono="${k}"]`;   // el botón que abrió el cuadro
 function tecla(e){
-  if(e.key==='Escape'&&local.abierto){const k=local.abierto;local.abierto=null;repinta(`[data-tono="${k}"]`)}
+  if(e.key==='Escape'&&local.abierto){const k=local.abierto;local.abierto=null;repinta(botonDe(k))}
 }
+
+// En el celular: al bajar por la hoja se oculta la barra de arriba (nombre y Acordes); al subir un poco, vuelve.
+let ultimoY=0;
+addEventListener('scroll',()=>{
+  if(!el||!location.hash.startsWith('#ver/'))return;
+  const y=scrollY,barra=el.querySelector('.vbar');
+  let oculta=barraOculta;
+  if(!matchMedia('(max-width:760px)').matches||y<60)oculta=false;
+  else if(y>ultimoY+8)oculta=true;
+  else if(y<ultimoY-8)oculta=false;
+  if(Math.abs(y-ultimoY)>8||y<60)ultimoY=y;
+  if(oculta!==barraOculta){barraOculta=oculta;if(barra)barra.classList.toggle('oculta',oculta)}
+},{passive:true});
 
 // Zoom con dos dedos sobre la hoja (idea de la antigua «Vista completa»). Va de 50% a 250%.
 let distInicial=0,zoomInicial=1;

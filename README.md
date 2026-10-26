@@ -13,6 +13,7 @@ Aplicación web para el ministerio de música: canciones, repertorio, calendario
 - `hoja.js`: cómo se dibuja cada canción en la hoja (lo usan la vista previa y la ventana Compartir)
 - `ver.js`: ventana Compartir de un repertorio (`#ver/ID`)
 - `musica.js`: tonos y transposición (la usan el editor y la ventana Compartir)
+- `equipos.js`: elegir una escala (equipo de un día de «Escalas») para un repertorio
 - `firebase-config.js`: configuración del proyecto de Firebase
 
 ## Inicio de sesión

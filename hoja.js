@@ -6,11 +6,11 @@
 import {esc} from "./base.js";
 
 const st=document.createElement('style');
-st.textContent=`.hojap{background:#fff;max-width:794px;padding:44px 52px;box-shadow:var(--sombra-2);border-radius:6px;min-height:520px;font-size:18px;line-height:1.35;margin:0 auto;overflow-x:auto}
+st.textContent=`.hojap{background:#fff;max-width:794px;padding:44px 52px;box-shadow:var(--sombra-2);border-radius:6px;min-height:520px;font-size:16px;line-height:1.35;margin:0 auto;overflow-x:auto}
 .rt{margin:0 0 4px;font-size:30px}.rf{color:var(--gris);margin-bottom:22px}.rf::first-letter{text-transform:uppercase}.blk{margin:0 0 18px}
 .lab{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--oro-texto);border-bottom:1px solid var(--linea);margin-bottom:6px;padding-bottom:3px}
 .st{font-family:var(--fuente-titulo);font-weight:600;font-size:20px;color:var(--azul);margin:8px 0 4px}.st small{font:600 12.5px var(--fuente);color:var(--gris);margin-left:10px}
-.sg{font-family:ui-monospace,SFMono-Regular,Menlo,Arial,"Courier New",monospace}.rl,.rc{font-family:inherit;white-space:pre-wrap;line-height:var(--lh,1.35)}.rc{white-space:pre;font-weight:700;color:#b3261e}
+.sg{font-family:Arial,"Helvetica Neue",Helvetica,sans-serif}.rl,.rc{font-family:inherit;white-space:pre-wrap;line-height:var(--lh,1.35)}.rc{white-space:pre;font-weight:700;color:#b3261e}
 .falta{color:var(--rojo);font-weight:600;font-size:13px;font-style:normal}.sg{margin-bottom:14px}
 .hojap .falta{font-size:15px;color:var(--gris);text-align:center;padding:60px 20px;border:1px dashed var(--linea-2);border-radius:var(--r-m)}`;
 document.head.append(st);
@@ -28,7 +28,7 @@ const hl=(c,t)=>{c=c||[];t=String(t||'');let h='',i=0;while(i<t.length){let j=i;
 function hojaAcordes(c,o){
   const f=fcss(c.fuenteA),tono=c.tonoAct||c.tono;
   let h=`<div class="sg" style="${f?'font-family:'+f+';':''}${c.lh?'--lh:'+c.lh+';':''}"><div class="st">${esc(c.titulo)}${(o.tono||tonoNormal)(tono||'')}</div>`;
-  c.lineasA.forEach(l=>{h+=`<div class="rl" style="font-size:${l.s||18}px;padding-left:${(l.n||0)*28}px;${l.a?'text-align:'+l.a+';':''}">${l.r.map(x=>`<span style="${est(x)}">${esc(x.t)}</span>`).join('')||'&nbsp;'}</div>`});
+  c.lineasA.forEach(l=>{h+=`<div class="rl" style="font-size:${l.s||16}px;padding-left:${(l.n||0)*28}px;${l.a?'text-align:'+l.a+';':''}">${l.r.map(x=>`<span style="${est(x)}">${esc(x.t)}</span>`).join('')||'&nbsp;'}</div>`});
   return h+'</div>';
 }
 // cancion(c, ac, o): dibuja una canción. ac = mostrar acordes.
@@ -41,7 +41,7 @@ export function cancion(c,ac,o={}){
   let h=`<div class="sg" style="${fcss(ac?c.fuenteA:c.fuente)?'font-family:'+fcss(ac?c.fuenteA:c.fuente)+';':''}${c.lh?'--lh:'+c.lh+';':''}"><div class="st">${esc(c.titulo)}${ac?(o.tono||tonoNormal)(c.tonoAct||c.tono||''):''}</div>`;
   if(ac&&c.intro&&c.intro.trim())h+=blq('Intro',c.intro,'intro');
   L.forEach((l,i)=>{
-    const z=l.s||18,ca=ac&&c.ac&&c.ac[i];
+    const z=l.s||16,ca=ac&&c.ac&&c.ac[i];
     if(ca&&ca.trim())h+=`<div class="rc" style="font-size:${z}px;padding-left:${(l.n||0)*28}px">${hl(cc['a'+i],ca)}</div>`;
     h+=`<div class="rl" style="font-size:${z}px;padding-left:${(l.n||0)*28}px;${!ac&&l.a?'text-align:'+l.a+';':''}">${l.r.map(r=>`<span style="${est(r)}">${esc(r.t)}</span>`).join('')||'&nbsp;'}</div>`;
     if(ac)it.filter(x=>x.despues===i).forEach(x=>{if((x.texto||'').trim())h+=blq('Interludio',x.texto,'i:'+x.id)});

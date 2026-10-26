@@ -12,7 +12,7 @@
 //   svgI y las rutas  dibujan los íconos (UNDO, REDO, BRUSH ...)
 //   CT, CH .......... colores de la paleta (texto y resaltado)
 // =====================================================================
-export const FIJAS={'Est\u00e1ndar':'','Courier New':'"Courier New",Courier,monospace','Consolas':'Consolas,"Courier New",monospace','Lucida Console':'"Lucida Console",Monaco,monospace','Menlo / Monaco':'Menlo,Monaco,"Courier New",monospace'};
+export const FIJAS={'Est\u00e1ndar (Arial)':'','Courier New':'"Courier New",Courier,monospace','Consolas':'Consolas,"Courier New",monospace','Lucida Console':'"Lucida Console",Monaco,monospace','Menlo / Monaco':'Menlo,Monaco,"Courier New",monospace'};
 export const PROPOR=['Arial','Calibri','Cambria','Century Gothic','Comic Sans MS','Georgia','Segoe UI','Tahoma','Times New Roman','Trebuchet MS','Verdana'];
 export const cssFuente=n=>!n?'':(FIJAS[n]||('"'+String(n).replace(/["\\<>]/g,'')+'",sans-serif'));
 export const K=['b','u','i','x','h','c','s','k'],OKC=/^(#[0-9a-f]{3,8}|rgba?\([\d\s,.]+\))$/i;

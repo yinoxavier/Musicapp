@@ -1,6 +1,7 @@
 // ===== PANTALLA: REPERTORIO (misa y evento, vista previa y PDF) =====
 import {$,esc,guardar,crear,escuchar,eliminar,vistas,ic,modal,aviso} from "./base.js";
 import {MOM,MES,fechaLarga,cancion} from "./hoja.js";
+import {elegirEscala,textoEquipo,equipoDe,alCambiarEquipos} from "./equipos.js";
 
 const st=document.createElement('style');
 st.textContent=`[data-vista=repertorio] .rcols{display:grid;grid-template-columns:400px minmax(0,1fr);gap:24px;align-items:start}
@@ -10,7 +11,19 @@ st.textContent=`[data-vista=repertorio] .rcols{display:grid;grid-template-column
 [data-vista=repertorio] .mrow .ic{width:34px;height:34px}
 .sec2{background:var(--capa);border-radius:var(--r-m);padding:12px;margin-top:12px;display:grid;gap:8px}[data-vista=repertorio] .dh{display:flex;align-items:center;gap:6px}
 .seg{display:flex;background:var(--suave);border-radius:var(--r-m);padding:3px;gap:2px}.seg button{background:transparent;color:var(--azul);flex:1;min-height:34px;border-radius:9px}.seg button.on{background:var(--azul);color:#fff}
-.rhead{display:grid;gap:12px;margin-bottom:6px}.rhead .dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rhead{display:grid;gap:12px;margin-bottom:6px}
+.rtabs{display:flex;align-items:center;gap:8px}
+.rtabs .seg{min-width:200px}
+.rtabs .seg button{padding:6px 16px}
+.rtabs [data-nuevo]{width:40px;padding:0}
+.tipochip{display:inline-block;background:var(--suave);color:var(--azul);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700}
+.azesc{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px}.azesc button{min-width:0}
+.escmisa{margin-top:8px}
+.besc{min-width:0}.besc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.besc.elegida{background:var(--oro-claro);color:var(--azul);border:1px solid #E6CF9E}
+.escsec{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--azul);background:var(--oro-claro);border:1px solid #E6CF9E;border-radius:999px;padding:3px 6px 3px 10px;justify-self:start;max-width:100%}
+.escsec span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.escsec button{width:24px;height:24px;min-height:0;padding:0;background:transparent;color:var(--azul)}.rhead .dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .momentos{margin-top:8px}
 .rcard{text-align:left;padding:16px 50px 16px 16px;display:flex;gap:14px;align-items:center}
 .rcard .cf{flex:none;min-width:54px;padding:6px 6px!important;border-radius:var(--r-m);background:var(--capa);text-align:center;padding:6px 0;line-height:1.1}
@@ -34,9 +47,11 @@ const SHR='<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle c
 const fechaCorta=f=>{if(!f)return'Sin fecha';const [y,m,d]=f.split('-');return d+'/'+m+'/'+y};
 
 let C=[],T=[],A=[],R=[],el=null,rep=null,tm=null;
+let pestana='misa';try{if(localStorage.getItem('pestanaRep')==='evento')pestana='evento'}catch(e){}   // pestaña Misas | Eventos de la lista
 const alb=c=>A.find(a=>a.id===c.albumId)?.nombre||'';
 const titAlb=c=>`<span>${esc(c.titulo)}</span>`+(alb(c)?`<small>${esc(alb(c))}</small>`:'');
 const ref=()=>{if(el)rep?pder():lista()};
+alCambiarEquipos(()=>{if(el&&rep){pizq();pder()}});
 escuchar('canciones',l=>{C=l;ref()});escuchar('etiquetas',l=>{T=l;ref()});escuchar('albumes',l=>{A=l});escuchar('repertorios',l=>{R=l;ref()});
 const rand=()=>Math.random().toString(36).slice(2,8);
 const sec=id=>rep.secciones.find(s=>s.id===id);
@@ -50,9 +65,11 @@ function flush(){clearTimeout(tm);tm=null;if(rep){const {id,...d}=rep;guardar('r
 
 vistas.repertorio=e=>{
   el=e;rep=null;el.onclick=clic;el.oninput=entra;el.onchange=entra;
-  const a=sessionStorage.getItem('repAbrir'),f=sessionStorage.getItem('repFecha');
-  sessionStorage.removeItem('repAbrir');sessionStorage.removeItem('repFecha');
-  if(a&&R.find(x=>x.id===a))abrir(a);else if(f)nuevo(f);else lista();
+  const a=sessionStorage.getItem('repAbrir'),f=sessionStorage.getItem('repFecha'),n=sessionStorage.getItem('repNuevo');
+  sessionStorage.removeItem('repAbrir');sessionStorage.removeItem('repFecha');sessionStorage.removeItem('repNuevo');
+  if(a&&R.find(x=>x.id===a))abrir(a);
+  else if(n){try{const v=JSON.parse(n);nuevo(v.fecha,v.tipo,v.nombre,v.evento)}catch(err){lista()}}   // creado desde el Calendario
+  else if(f)nuevo(f,pestana);else lista();
 };
 addEventListener('hashchange',()=>{if(location.hash!=='#repertorio'){flush();el=null;rep=null}});
 addEventListener('reinicio',e=>{if(e.detail==='repertorio'&&el){flush();rep=null;lista()}});
@@ -61,12 +78,19 @@ function lista(){
   el.className="";
   const cuadro=f=>{if(!f)return '<b>\u2013</b><span>Sin fecha</span>';const [y,m,d]=f.split('-').map(Number);return `<b>${d}</b><span>${MES[m-1].slice(0,3)}${y!==new Date().getFullYear()?' '+y:''}</span>`};
   const cuantas=r=>{const n=r.tipo==='evento'?(r.secciones||[]).reduce((a,x)=>a+(x.canciones||[]).length,0):Object.values(r.misa||{}).filter(Boolean).length;return n?n+(n>1?' canciones':' canci\u00f3n'):'Sin canciones'};
-  el.innerHTML=`<div class="ch2"><h1>Repertorios</h1><button data-nuevo>${ic('pls',16)} Nuevo repertorio</button></div><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">`
-    +[...R].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(r=>`<div class="card rcard" data-open="${r.id}" role="button" tabindex="0"><div class="cf" aria-hidden="true">${cuadro(r.fecha)}</div><div class="ri"><b>${esc(r.nombre||'Sin nombre')}</b><small>${cuantas(r)}</small><span class="tipo">${r.tipo==='evento'?'Evento':'Misa'}</span></div><button class="ic rj" data-del="${r.id}" aria-label="Eliminar \u00ab${esc(r.nombre||'Sin nombre')}\u00bb" title="Eliminar">${ic('trs',16)}</button></div>`).join('')
-    +'</div>'+(R.length?'':'<p class="vacio">A\u00fan no hay repertorios. Pulsa \u00abNuevo repertorio\u00bb para preparar el primero.</p>');
+  el.innerHTML=`<div class="ch2"><h1>Repertorios</h1><div class="rtabs"><div class="seg" role="group" aria-label="Tipo de repertorio"><button data-pest="misa" class="${pestana==='misa'?'on':''}" aria-pressed="${pestana==='misa'}">Misas</button><button data-pest="evento" class="${pestana==='evento'?'on':''}" aria-pressed="${pestana==='evento'}">Eventos</button></div><button data-nuevo aria-label="${pestana==='evento'?'Nuevo repertorio de evento':'Nuevo repertorio de misa'}" title="${pestana==='evento'?'Nuevo repertorio de evento':'Nuevo repertorio de misa'}">${ic('pls',18)}</button></div></div><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">`
+    +R.filter(r=>(r.tipo==='evento'?'evento':'misa')===pestana).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(r=>`<div class="card rcard" data-open="${r.id}" role="button" tabindex="0"><div class="cf" aria-hidden="true">${cuadro(r.fecha)}</div><div class="ri"><b>${esc(r.nombre||'Sin nombre')}</b><small>${cuantas(r)}</small><span class="tipo">${r.tipo==='evento'?'Evento':'Misa'}</span></div><button class="ic rj" data-del="${r.id}" aria-label="Eliminar \u00ab${esc(r.nombre||'Sin nombre')}\u00bb" title="Eliminar">${ic('trs',16)}</button></div>`).join('')
+    +'</div>'+(R.some(r=>(r.tipo==='evento'?'evento':'misa')===pestana)?'':`<p class="vacio">A\u00fan no hay repertorios de ${pestana==='evento'?'eventos':'misas'}. Pulsa \u00ab+\u00bb para crear el primero.</p>`);
 }
-async function nuevo(f){const d={nombre:'Nuevo repertorio',fecha:f||'',tipo:'misa',acordes:false,misa:{},secciones:[]};const r=await crear('repertorios',d);rep={id:r.id,...d};editor()}
-function abrir(id){rep=structuredClone(R.find(x=>x.id===id));rep.misa=rep.misa||{};rep.secciones=rep.secciones||[];editor()}
+// nuevo(fecha, tipo, nombre, evento): crea un repertorio. El tipo (misa o evento) queda fijo.
+// Si viene de un evento del Calendario, el evento guarda el id de este repertorio.
+async function nuevo(f,tipo,nombre,evento){
+  const d={nombre:nombre||'Nuevo repertorio',fecha:f||'',tipo:tipo==='evento'?'evento':'misa',acordes:false,misa:{},secciones:[]};
+  const r=await crear('repertorios',d);
+  if(evento)guardar('eventos',evento,{repertorioId:r.id});
+  pestana=d.tipo;rep={id:r.id,...d};editor();
+}
+function abrir(id){rep=structuredClone(R.find(x=>x.id===id));pestana=rep.tipo==='evento'?'evento':'misa';rep.misa=rep.misa||{};rep.secciones=rep.secciones||[];editor()}
 function editor(){
   el.className='';
   el.innerHTML=`<div class="rcols"><section class="c2" id="izq"></section><section><div class="ch2 noprint"><h2>Vista previa</h2><div class="mb"><button class="ic" data-share aria-label="Compartir" title="Compartir">${ico(SHR,18)}</button><button class="ic" data-print aria-label="Descargar PDF" title="Descargar PDF">${ico(EXP,18)}</button></div></div><div class="hojap" id="hoja"></div></section></div>`;
@@ -76,25 +100,36 @@ function pizq(){
   const i=$('#izq');if(!i||!rep)return;
   const fila=([id,n])=>{const c=C.find(x=>x.id===rep.misa[id]);
     return`<div class="mrow"><div class="mn"><b>${n}</b>${c?titAlb(c):'<em class="falta">Sin canci\u00f3n</em>'}</div><button class="ic" data-pick="${id}" aria-label="Elegir canci\u00f3n para ${n}" title="Elegir">${ic('edt',15)}</button><button class="ic" data-rnd="${id}" aria-label="Canci\u00f3n al azar para ${n}" title="Al azar">${ico(SHF,15)}</button>${c?`<button class="ic rj" data-rm="${id}" aria-label="Quitar canci\u00f3n de ${n}" title="Quitar">${ic('x',15)}</button>`:''}</div>`};
-  const secs=s=>`<div class="sec2"><div class="dh"><input class="inl" data-sn="${s.id}" value="${esc(s.nombre)}" placeholder="Nombre de la secci\u00f3n"><button class="ic" data-srnd="${s.id}" aria-label="A\u00f1adir canci\u00f3n al azar" title="Al azar">${ico(SHF,15)}</button><button class="ic rj" data-sdel="${s.id}" aria-label="Eliminar secci\u00f3n">${ic('trs',15)}</button></div>
-    <label class="fl2">Opciones de canciones<select data-st="${s.id}"><option value="">Todas las canciones</option>${T.map(t=>`<option value="${t.id}"${s.tag===t.id?'selected':''}>${esc(t.nombre)}</option>`).join('')}</select></label>`
+  const secs=s=>`<div class="sec2"><div class="dh"><input class="inl" data-sn="${s.id}" value="${esc(s.nombre)}" placeholder="Nombre de la secci\u00f3n"><button class="ic" data-sesc="${s.id}" aria-label="Elegir escala de esta secci\u00f3n" title="Elegir escala">${ic('usr',15)}</button><button class="ic rj" data-sdel="${s.id}" aria-label="Eliminar secci\u00f3n">${ic('trs',15)}</button></div>
+    ${textoEquipo(s.escala)?`<div class="escsec">${ic('usr',14)}<span>${esc(textoEquipo(s.escala))}</span><button data-sescq="${s.id}" aria-label="Quitar escala" title="Quitar escala">${ic('x',13)}</button></div>`:''}
+    <label class="fl2">Opciones de canciones<select data-st="${s.id}"><option value="">Todas las canciones</option>${[...T].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es',{sensitivity:'base'})).map(t=>`<option value="${t.id}"${s.tag===t.id?'selected':''}>${esc(t.nombre)}</option>`).join('')}</select></label>`
     +s.canciones.map(id=>{const c=C.find(x=>x.id===id);return c?`<div class="mrow"><div class="mn">${titAlb(c)}</div><button class="ic rj" data-srm="${s.id}:${id}" aria-label="Quitar">${ic('x',15)}</button></div>`:''}).join('')
     +`<button class="sec" data-spick="${s.id}">${ic('pls',15)} Canci\u00f3n</button></div>`;
-  i.innerHTML=`<div class="ch2"><button class="sec" data-back>${ic('lft',16)} Repertorios</button></div>
+  i.innerHTML=`<div class="ch2"><button class="sec" data-back>${ic('lft',16)} Repertorios</button><span class="tipochip">${rep.tipo==='evento'?'Evento':'Misa'}</span></div>
     <div class="rhead"><label class="fl2">Nombre del repertorio<input id="rn" value="${esc(rep.nombre||'')}"></label>
-    <div class="dos"><label class="fl2">Fecha<input type="date" id="rf" value="${esc(rep.fecha||'')}"></label>
-    <div class="fl2"><span id="tl">Tipo</span><div class="seg" role="group" aria-labelledby="tl"><button data-tipo="misa" class="${rep.tipo!=='evento'?'on':''}" aria-pressed="${rep.tipo!=='evento'}">Misa</button><button data-tipo="evento" class="${rep.tipo==='evento'?'on':''}" aria-pressed="${rep.tipo==='evento'}">Evento</button></div></div></div>
+    <label class="fl2">Fecha<input type="date" id="rf" value="${esc(rep.fecha||'')}"></label>
     <label class="chk" style="margin:2px 0"><input type="checkbox" id="ra" ${rep.acordes?'checked':''}> Mostrar acordes</label></div>`
-    +(rep.tipo==='evento'?`<button data-sadd style="width:100%;margin-top:8px">${ic('pls',16)} A\u00f1adir secci\u00f3n</button>${rep.secciones.map(secs).join('')}`:`<button class="sec" data-alet style="width:100%;margin-top:8px">${ico(SHF)} Elegir toda la misa al azar</button><div class="momentos">${MOM.map(fila).join('')}</div>`);
+    +(rep.tipo==='evento'?`<button data-sadd style="width:100%;margin-top:8px">${ic('pls',16)} A\u00f1adir secci\u00f3n</button>${rep.secciones.map(secs).join('')}`:`<div class="azesc"><button class="sec" data-alet>${ico(SHF)} Elegir toda la misa al azar</button><button class="sec besc${textoEquipo(rep.escala)?' elegida':''}" data-mesc title="Elegir escala para toda la misa">${ic('usr',16)}<span>Escala</span></button></div>${textoEquipo(rep.escala)?`<div class="escsec escmisa">${ic('usr',14)}<span>${esc(textoEquipo(rep.escala))}</span><button data-mescq aria-label="Quitar escala" title="Quitar escala">${ic('x',13)}</button></div>`:''}<div class="momentos">${MOM.map(fila).join('')}</div>`);
 }
+// ===================== esto se puede Borrar =====================
+// Muestra el equipo elegido (escala) en la vista previa y en el PDF.
+// Si no lo quieren, borra desde aquí hasta «hasta aquí» y también las dos líneas
+// marcadas igual dentro de pder() (más abajo).
+const stEq=document.createElement('style');
+stEq.textContent=`.req{font-size:13.5px;color:var(--gris);margin:-14px 0 20px;line-height:1.45}.req b{color:var(--azul)}.blk .req{margin:0 0 8px}`;
+document.head.append(stEq);
+const equipoPrevia=sel=>{const e=equipoDe(sel);if(!e)return '';
+  return `<div class="req"><b>${esc(e.dia)} \u00b7 ${esc(e.equipo)}</b>${e.miembros.length?': '+e.miembros.map(p=>esc(p.nombre)+(p.ocupacion?' ('+esc(p.ocupacion)+')':'')).join(', '):''}</div>`};
+// ===================== hasta aquí =====================
+
 function pder(){
   const h=$('#hoja');if(!h||!rep)return;
   const song=id=>{const c=C.find(x=>x.id===id);return c?cancion(c,rep.acordes):''};
   const hay=id=>C.find(x=>x.id===id);
   const b=(rep.tipo==='evento'
-    ?rep.secciones.filter(s=>s.canciones.some(hay)).map(s=>`<div class="blk"><div class="lab">${esc(s.nombre||'Secci\u00f3n')}</div>${s.canciones.map(song).join('')}</div>`)
+    ?rep.secciones.filter(s=>s.canciones.some(hay)).map(s=>`<div class="blk"><div class="lab">${esc(s.nombre||'Secci\u00f3n')}</div>${equipoPrevia(s.escala)/* esto se puede Borrar … hasta aquí */}${s.canciones.map(song).join('')}</div>`)
     :MOM.filter(([id])=>hay(rep.misa[id])).map(([id,n])=>`<div class="blk"><div class="lab">${n}</div>${song(rep.misa[id])}</div>`)).join('')||'<div class="falta">Elige canciones en la columna de la izquierda para ver aqu\u00ed c\u00f3mo quedar\u00e1 la hoja.</div>';
-  h.innerHTML=`<h1 class="rt">${esc(rep.nombre||'')}</h1><div class="rf">${esc(fechaLarga(rep.fecha))}</div>${b}`;
+  h.innerHTML=`<h1 class="rt">${esc(rep.nombre||'')}</h1><div class="rf">${esc(fechaLarga(rep.fecha))}</div>${rep.tipo!=='evento'?equipoPrevia(rep.escala):''/* esto se puede Borrar … hasta aquí */}${b}`;
 }
 
 // compartir: en el celular abre el menú de compartir del teléfono (WhatsApp, copiar enlace...).
@@ -121,15 +156,19 @@ function imprimir(){
 }
 
 function clic(e){
-  const b=e.target.closest('[data-nuevo],[data-open],[data-del],[data-back],[data-print],[data-share],[data-tipo],[data-alet],[data-pick],[data-rnd],[data-rm],[data-sadd],[data-sdel],[data-spick],[data-srnd],[data-srm]');
+  const b=e.target.closest('[data-nuevo],[data-open],[data-del],[data-back],[data-print],[data-share],[data-pest],[data-mesc],[data-mescq],[data-sesc],[data-sescq],[data-alet],[data-pick],[data-rnd],[data-rm],[data-sadd],[data-sdel],[data-spick],[data-srm]');
   if(!b)return;const d=b.dataset,ok=()=>{guarda();pizq();pder()};
-  if(d.nuevo!=null)nuevo();
+  if(d.nuevo!=null)nuevo('',pestana);
+  else if(d.pest){pestana=d.pest;try{localStorage.setItem('pestanaRep',pestana)}catch(err){}lista();const t=el.querySelector(`[data-pest="${pestana}"]`);if(t)t.focus()}
+  else if(d.mesc!=null)elegirEscala(rep.escala,v=>{rep.escala=v;ok()});                          // una escala para toda la misa
+  else if(d.sesc){const s=sec(d.sesc);elegirEscala(s.escala,v=>{s.escala=v;ok()})}                // una escala por sección
+  else if(d.sescq){sec(d.sescq).escala=null;ok()}
+  else if(d.mescq!=null){rep.escala=null;ok()}
   else if(d.del){const r=R.find(x=>x.id===d.del);eliminar('repertorios',r,'el repertorio "'+(r.nombre||'')+'"')}
   else if(d.open)abrir(d.open);
   else if(d.back!=null){flush();rep=null;lista()}
   else if(d.print!=null)imprimir();
   else if(d.share!=null)compartir();
-  else if(d.tipo){rep.tipo=d.tipo;ok()}
   else if(d.alet!=null){
     if(Object.keys(rep.misa).length&&!confirm('Esto reemplaza las canciones elegidas. \u00bfContinuar?'))return;
     const nm={};MOM.forEach(([id])=>{const x=azar(candMom(id),Object.values(nm));if(x)nm[id]=x});rep.misa=nm;ok();
@@ -140,7 +179,6 @@ function clic(e){
   else if(d.sadd!=null){rep.secciones.push({id:rand(),nombre:'',tag:'',canciones:[]});ok()}
   else if(d.sdel){rep.secciones=rep.secciones.filter(s=>s.id!==d.sdel);ok()}
   else if(d.spick){const s=sec(d.spick);elegir(s.nombre||'Elegir canci\u00f3n',candSec(s),id=>{if(!s.canciones.includes(id))s.canciones.push(id);ok()})}
-  else if(d.srnd){const s=sec(d.srnd),id=azar(candSec(s),usadas());if(!id)return alert('No hay canciones disponibles para esta secci\u00f3n.');s.canciones.push(id);ok()}
   else if(d.srm){const [sid,cid]=d.srm.split(':'),s=sec(sid);s.canciones=s.canciones.filter(x=>x!==cid);ok()}
 }
 

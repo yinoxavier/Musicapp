@@ -46,7 +46,7 @@ export function forzarCierre(){        // cierra el editor sin guardar (por ejem
 const st=document.createElement('style');
 st.textContent=`#editor.ed{background:#D3D9E6;padding:0 16px 16px}
 .tb{position:sticky;top:0;z-index:3;background:#D3D9E6e8;backdrop-filter:blur(6px);margin:0 -16px;padding:14px 16px 8px;border-bottom:1px solid #c3cadb}
-.pg{background:linear-gradient(90deg,#f1f3f8 0,#f1f3f8 34px,#fff 34px);max-width:794px;min-height:1123px;margin:10px auto 40px;padding:48px 56px;box-shadow:0 2px 14px #0003;font-size:18px;line-height:var(--lh,1.35);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace}
+.pg{background:linear-gradient(90deg,#f1f3f8 0,#f1f3f8 34px,#fff 34px);max-width:794px;min-height:1123px;margin:10px auto 40px;padding:48px 56px;box-shadow:0 2px 14px #0003;font-size:16px;line-height:var(--lh,1.35);font-family:Arial,"Helvetica Neue",Helvetica,sans-serif}
 @media(max-width:700px){.pg{padding:20px 14px;min-height:80vh}}
 .le{outline:none;min-height:400px}.ln{white-space:pre-wrap;min-height:1.35em}
 .ln [data-k]{font-weight:700;color:#b3261e}
@@ -57,6 +57,13 @@ st.textContent=`#editor.ed{background:#D3D9E6;padding:0 16px 16px}
 .rib button.on,.pp button.on{background:#1F2A4D;color:#fff;box-shadow:0 0 0 2px #C58A2B}.cnt{margin-left:auto;font-size:12px;color:#4b5575;font-weight:600}
 .tb .top{align-items:center;margin-bottom:10px}.tb #ti{flex:1 1 220px;min-width:150px;font-weight:700;font-size:16px}.tb #al{flex:0 1 190px;min-width:0}.tb .et .box{min-width:150px}
 .tb .acc{margin-left:auto;display:flex;gap:8px}
+/* Herramientas ocultas: solo queda una barra fina con Letra/Acordes, Guardar y el botón para mostrar */
+#editor.plegada .tb{display:flex;align-items:center;gap:8px;padding-top:8px;padding-bottom:8px}
+#editor.plegada .tb .top{order:2;margin:0;flex:none;flex-wrap:nowrap}
+#editor.plegada .tabs{order:1;flex:1;margin:0;flex-wrap:nowrap}
+#editor.plegada .tabs .der{width:auto;margin-left:auto}
+#editor.plegada #ti,#editor.plegada #al,#editor.plegada .et,#editor.plegada .tb .top>.dd,#editor.plegada #no,#editor.plegada #zm,#editor.plegada #cnt{display:none!important}
+#editor.plegada .tb .acc{width:auto;margin:0}
 @media(max-width:760px){.tb{padding:10px 8px 6px;margin:0 -8px}.tb .top{gap:6px}.tb #al{flex:1 1 140px}.tb .et{flex:1 1 160px}.tb .et .box{min-width:0;width:100%}.tb .acc{width:100%}.tb .acc button{flex:1}
   .rib{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}.gr{flex:none}.tabs .der{margin-left:0;width:100%;justify-content:space-between}#editor.ed{padding:0 8px 8px}}
 .gr{display:flex;align-items:center;gap:4px;padding:5px 8px 16px;border:1px solid #B9C1D6;border-radius:var(--r-m);position:relative;background:#E6EAF3}
@@ -94,7 +101,7 @@ document.head.append(st);
 // Una línea es {r:[tramos], s?, a?, n?}. Un tramo es {t:'texto', k,b,i,u,x,c,h,s}.
 //   k = acorde, b/i/u/x = negrita/cursiva/subrayado/tachado, c = color, h = resaltado,
 //   s = tamaño propio del tramo (solo si es distinto del tamaño de su línea).
-const TAM=18,ROJO='#b3261e',DEFC='#1d2233',FMT=['b','i','u','x','c','h','s'];
+const TAM=16,ROJO='#b3261e',DEFC='#1d2233',FMT=['b','i','u','x','c','h','s'];
 const TAMS=[8,10,12,14,16,18,20,22,24,28,32,36,40,48,60];
 const px=l=>l.s||TAM;                                   // tamaño base de una línea
 const lim=z=>Math.max(6,Math.min(120,z));
@@ -464,7 +471,7 @@ export function abrir(s,alCerrar){
   const hojaHtml=(ls=lineasDe())=>ls.map(l=>`<div class="ln" data-n="${l.n||0}" style="font-size:${px(l)}px;${l.a?'text-align:'+l.a+';':''}padding-left:${(l.n||0)*28}px">${htmlLinea(l)}</div>`).join('');
   const cnt=()=>{const e=$('#cnt',ov);if(!e)return;const le=$('#le',ov),t=le?le.innerText:lineasDe().map(plano).join('\n'),n=t.trim()?t.trim().split(/\s+/).length:0;e.textContent=n+' palabras \u00b7 '+t.replace(/\n/g,'').length+' caracteres'};
   const optsFuente=()=>{
-    const cur=(modo==='letra'?ed.fuente:ed.fuenteA)||'Est\u00e1ndar',op=n=>`<option ${n===cur?'selected':''}>${esc(n)}</option>`;
+    const cur=(modo==='letra'?ed.fuente:ed.fuenteA)||'Est\u00e1ndar (Arial)',op=n=>`<option ${n===cur?'selected':''}>${esc(n)}</option>`;
     const todas=[...Object.keys(FIJAS),...PROPOR,...LOCALES];
     return todas.map(op).join('')+(todas.includes(cur)?'':`<option selected>${esc(cur)}</option>`)
       +(window.queryLocalFonts&&!LOCALES.length?'<option value="__local">Cargar fuentes de este equipo...</option>':'');
@@ -518,7 +525,7 @@ export function abrir(s,alCerrar){
     }
     const t=[...v].map(x=>Math.round(x*10)/10);
     if(t.length===1){sz.value=t[0];sz.placeholder=String(t[0])}
-    else{sz.value='';sz.placeholder=t.length?'\u2013':'18'}
+    else{sz.value='';sz.placeholder=t.length?'\u2013':String(TAM)}
   }
   const marcarBotones=()=>{
     const pg=ov.querySelector('.pg'),le=$('#le',ov);
@@ -657,7 +664,7 @@ export function abrir(s,alCerrar){
         <span class="dd"><button class="sec" id="tonb" data-pop="ton" ${modo==='letra'?'disabled title="La tonalidad se cambia en la pesta\u00f1a Acordes"':''}>Tonalidad${act?' \u00b7 <b>'+esc(act)+'</b>':''}</button>${pp('ton','','tonbox')}</span>
         <span class="acc"><button class="sec" id="no">Cancelar</button><button id="ok">Guardar canci\u00f3n</button></span></div>
       <div class="rib" ${plegada?'hidden':''}>
-        <div class="gr" data-g="Texto"><select id="ff" title="Tipo de letra">${optsFuente()}</select><span class="dd szb"><input type="text" id="sz" inputmode="decimal" autocomplete="off" placeholder="18" title="Tama\u00f1o del texto donde est\u00e1 el cursor o la selecci\u00f3n"><button class="sec fb" data-pop="sz" title="Lista de tama\u00f1os" aria-label="Lista de tama\u00f1os">${svgI('<path d="M6 9l6 6 6-6"/>',12)}</button></span>${pp('sz',`<div class="menuAa">${TAMS.map(n=>`<button class="fb" data-f="s:${n}">${n}</button>`).join('')}</div>`,'tamb')}${fb('s-','A\u2212','Reducir tama\u00f1o (Ctrl+Mays+&lt;)')}${fb('s+','A+','Aumentar tama\u00f1o (Ctrl+Mays+&gt;)')}
+        <div class="gr" data-g="Texto"><select id="ff" title="Tipo de letra">${optsFuente()}</select><span class="dd szb"><input type="text" id="sz" inputmode="decimal" autocomplete="off" placeholder="16" title="Tama\u00f1o del texto donde est\u00e1 el cursor o la selecci\u00f3n"><button class="sec fb" data-pop="sz" title="Lista de tama\u00f1os" aria-label="Lista de tama\u00f1os">${svgI('<path d="M6 9l6 6 6-6"/>',12)}</button></span>${pp('sz',`<div class="menuAa">${TAMS.map(n=>`<button class="fb" data-f="s:${n}">${n}</button>`).join('')}</div>`,'tamb')}${fb('s-','A\u2212','Reducir tama\u00f1o (Ctrl+Mays+&lt;)')}${fb('s+','A+','Aumentar tama\u00f1o (Ctrl+Mays+&gt;)')}
           ${fb('b','<b>B</b>','Negrita (Ctrl+B)')}${fb('i','<i class="bi">I</i>','Cursiva (Ctrl+I)')}${fb('u','<u>U</u>','Subrayado (Ctrl+U)')}
           <button class="sec fb${modoAcorde?' on':''}" data-f="k" title="Acorde: marca los acordes de lo seleccionado. Sin selecci\u00f3n, act\u00edvalo para escribir acordes" aria-label="Acorde" ${modo==='letra'?'disabled':''}><b class="btnk">\u266A</b></button>
           ${dd('c',`<button class="sec fb" data-pop="c" title="Color de texto" aria-label="Color de texto"><span class="ia">A</span><span class="cb" style="background:${uc}"></span></button>`,pal('c',CT)+`<div class="pie"><button class="sec fb" data-f="c:auto">Autom\u00e1tico</button><label class="sec mas">M\u00e1s colores<input type="color" id="co" value="${uc}"></label></div>`)}
@@ -668,7 +675,7 @@ export function abrir(s,alCerrar){
           ${dd('aa',`<button class="sec fb" data-pop="aa" title="May\u00fasculas y min\u00fasculas">Aa</button>`,`<div class="menuAa"><button class="sec fb" data-f="case:up">MAY\u00daSCULAS</button><button class="sec fb" data-f="case:low">min\u00fasculas</button><button class="sec fb" data-f="case:cap">Cada Palabra</button></div>`)}</div>
         <div class="gr" data-g="Herramientas">${fb('undo',svgI(UNDO,16),'Deshacer (Ctrl+Z)')}${fb('redo',svgI(REDO,16),'Rehacer (Ctrl+Y)')}${fb('pincel',svgI(BRUSH,16),'Copiar formato (selecciona, pulsa, selecciona otro y vuelve a pulsar)')}${fb('clear','T<sub>x</sub>','Borrar formato')}<button class="sec" data-bus title="Buscar y reemplazar">${svgI(FIND,16)} Buscar</button></div></div>
       <div class="tabs" role="tablist" aria-label="Hoja"><button class="${modo==='letra'?'':'sec'}" id="ml" role="tab" aria-selected="${modo==='letra'}">Letra</button><button class="${modo==='acordes'?'':'sec'}" id="ma" role="tab" aria-selected="${modo==='acordes'}">Acordes</button>
-        <span class="der"><select id="zm" title="Zoom de la hoja">${[50,75,100,125,150,200].map(n=>`<option value="${n}" ${n===zoom?'selected':''}>${n}%</option>`).join('')}</select><span id="cnt" class="cnt"></span><button class="sec" data-plegar title="Mostrar u ocultar la barra de formato" aria-label="Mostrar u ocultar la barra de formato">${plegada?'\u25BC':'\u25B2'}</button></span></div>${pops.join('')}</div>
+        <span class="der"><select id="zm" title="Zoom de la hoja">${[50,75,100,125,150,200].map(n=>`<option value="${n}" ${n===zoom?'selected':''}>${n}%</option>`).join('')}</select><span id="cnt" class="cnt"></span><button class="sec" data-plegar title="${plegada?'Mostrar el t\u00edtulo, el \u00e1lbum y las herramientas':'Ocultar el t\u00edtulo, el \u00e1lbum y las herramientas para tener m\u00e1s espacio'}" aria-label="${plegada?'Mostrar herramientas':'Ocultar herramientas'}">${plegada?'\u25BC':'\u25B2'}</button></span></div>${pops.join('')}</div>
       <div class="pg" style="--lh:${ed.lh||1.35};zoom:${zoom/100};${cssFuente(fam)?'font-family:'+esc(cssFuente(fam))+';':''}"><div id="le" class="le" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="${modo==='letra'?'Letra':'Acordes'} de la canci\u00f3n">${hojaHtml()}</div></div>`;
     cnt();refTono();marcarBotones();
     if(popAb)colocaPop(popAb);
@@ -720,7 +727,7 @@ export function abrir(s,alCerrar){
     else if(t.id==='zm'){zoom=+t.value;ov.querySelector('.pg').style.zoom=zoom/100}
     else if(t.id==='ff'){
       if(t.value==='__local')return cargarLocales();
-      const v=t.value==='Est\u00e1ndar'?'':t.value;
+      const v=t.value==='Est\u00e1ndar (Arial)'?'':t.value;
       if(modo==='letra')ed.fuente=v;else ed.fuenteA=v;
       ov.querySelector('.pg').style.fontFamily=cssFuente(v)}};
   ov.onkeydown=e=>{
@@ -768,7 +775,7 @@ export function abrir(s,alCerrar){
     if(d.tf!=null){ed.tono=ed.tonoAct||ed.tono;refTono();return}
     if(d.tr!=null){ed.tono='';ed.tonoAct='';refTono();return}
     if(d.tk!=null){if(!ed.tono){ed.tono=ed.tonoAct=d.tk;refTono()}else irATono(d.tk);return}
-    if(d.plegar!=null){plegada=!plegada;ov.querySelector('.rib').hidden=plegada;t.textContent=plegada?'\u25BC':'\u25B2';return}
+    if(d.plegar!=null){plegada=!plegada;ov.querySelector('.rib').hidden=plegada;ov.classList.toggle('plegada',plegada);t.textContent=plegada?'\u25BC':'\u25B2';t.setAttribute('aria-label',plegada?'Mostrar herramientas':'Ocultar herramientas');t.title=plegada?'Mostrar el t\u00edtulo, el \u00e1lbum y las herramientas':'Ocultar el t\u00edtulo, el \u00e1lbum y las herramientas para tener m\u00e1s espacio';return}
     if(d.f){const [p,...r]=d.f.split(':'),v=r.join(':');
       if(p==='c'&&v!=='auto'){uc=v;ov.querySelectorAll('[data-pop="c"] .cb').forEach(x=>x.style.background=uc)}
       if(p==='h'&&v!=='none'){uh=v;ov.querySelectorAll('[data-pop="h"] .cb').forEach(x=>x.style.background=uh)}

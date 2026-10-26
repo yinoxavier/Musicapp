@@ -141,7 +141,7 @@ header .salir:hover{background:#ffffff26;filter:none}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px}
 .grid.chico{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
 .card{background:var(--blanco);border-radius:16px;padding:10px;text-align:center;box-shadow:var(--sombra-1);cursor:pointer;position:relative;transition:box-shadow .2s,transform .2s;outline-offset:3px}
-.card:hover{box-shadow:var(--sombra-2);transform:translateY(-2px)}
+.card:hover{box-shadow:var(--sombra-2)}
 .chico .card{border-radius:14px;padding:7px;font-size:13px}
 .card .foto{aspect-ratio:1;border-radius:11px;background:var(--capa) center/cover;display:grid;place-items:center;color:#8C95B3}
 .card b{display:block;margin:8px 4px 2px;font-size:14px;line-height:1.3;word-break:break-word}
@@ -153,10 +153,11 @@ header .salir:hover{background:#ffffff26;filter:none}
 .card details summary::-webkit-details-marker,.fila2 details summary::-webkit-details-marker{display:none}
 .card details summary:hover,.fila2 details summary:hover{background:#fff}
 .card details[open],.fila2 details[open]{z-index:4}
-.card details>div,.fila2 details>div{background:var(--blanco);box-shadow:var(--sombra-2);border:1px solid var(--linea);border-radius:var(--r-m);padding:6px;display:grid;gap:2px;width:200px;position:absolute;right:0;margin-top:6px;text-align:left}
+.card details>div,.fila2 details>div{background:var(--blanco);box-shadow:var(--sombra-2);border:2px solid #CBD2E3;border-radius:var(--r-m);padding:6px;display:grid;gap:2px;width:210px;position:absolute;right:0;margin-top:6px;text-align:left}
 .card details>div button,.fila2 details>div button{background:transparent;color:var(--tx);justify-content:flex-start;font-weight:600;min-height:36px;padding:6px 10px;border-radius:var(--r-s)}
-.card details>div button:hover,.fila2 details>div button:hover{background:var(--capa);filter:none}
-.card details>div button.rojo,.fila2 details>div button.rojo{color:var(--rojo)}
+.card details>div button:hover,.fila2 details>div button:hover{background:var(--capa);filter:none!important}
+.card details>div button.rojo,.fila2 details>div button.rojo{color:var(--rojo);font-weight:700;border-top:1px solid var(--linea);border-radius:0 0 var(--r-s) var(--r-s);margin-top:4px;padding-top:9px}
+.card details>div button.rojo svg,.fila2 details>div button.rojo svg{color:var(--rojo)}
 .card details>div button.rojo:hover,.fila2 details>div button.rojo:hover{background:var(--rojo-claro)}
 
 /* Ventanas pequeñas centradas */
@@ -196,7 +197,7 @@ body:has(#nav a) #aviso{bottom:calc(84px + env(safe-area-inset-bottom))}
 .inicio .sub{color:var(--gris);margin:0}
 .menu4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:34px;width:100%}
 .menu4 a{background:var(--blanco);border-radius:var(--r-xl);padding:26px 16px 22px;text-decoration:none;color:var(--azul);box-shadow:var(--sombra-1);display:grid;justify-items:center;gap:6px;transition:box-shadow .2s,transform .2s;outline-offset:3px}
-.menu4 a:hover{box-shadow:var(--sombra-2);transform:translateY(-3px)}
+.menu4 a:hover{box-shadow:var(--sombra-2)}
 .menu4 .mi{width:64px;height:64px;border-radius:20px;background:var(--capa);display:grid;place-items:center;margin-bottom:6px;transition:background-color .2s,color .2s}
 .menu4 a:hover .mi{background:var(--azul);color:var(--oro)}
 .menu4 a span{font-size:17px;font-weight:800}

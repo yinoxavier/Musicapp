@@ -34,6 +34,7 @@ hoja.textContent=`.lst{display:grid;gap:8px}
 .buscar{position:relative;flex:1 1 260px;min-width:200px}
 .buscar>svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gris);pointer-events:none}
 .buscar input{width:100%;padding-left:38px;padding-right:40px}
+.buscar input::-webkit-search-cancel-button,.buscar input::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
 .buscar .x{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:30px;height:30px;min-height:0;padding:0;border-radius:50%;background:transparent;color:var(--gris);font-size:20px;line-height:1}
 .buscar .x:hover{background:var(--suave);filter:none}
 .vbox{position:relative}.vmenu{position:absolute;right:0;top:100%;z-index:12;background:var(--blanco);border:1px solid var(--linea);border-radius:14px;box-shadow:var(--sombra-2);padding:14px;width:300px;margin-top:6px}
@@ -148,7 +149,7 @@ function menuDe(tipo,o,cont,manual,titulo){
   const boton=(acc,texto,clase='')=>`<button class="${clase}" data-acc="${acc}" ${datos}>${texto}</button>`;
   const deAlbum=tipo==='album'?boton('nombre','Editar nombre')+boton('artista','Editar artista')+boton('foto','Editar foto del \u00e1lbum'):'';
   const mover=manual?boton('atras','Mover atr\u00e1s')+boton('adelante','Mover adelante'):'';
-  return `<details><summary aria-label="Opciones de \u00ab${esc(titulo)}\u00bb" title="Opciones">&#8942;</summary><div>${deAlbum}${mover}${boton('eliminar','Eliminar','rojo')}</div></details>`;
+  return `<details><summary aria-label="Opciones de \u00ab${esc(titulo)}\u00bb" title="Opciones">&#8942;</summary><div>${deAlbum}${mover}${boton('eliminar',ic('trs',16)+' Eliminar','rojo')}</div></details>`;
 }
 
 // item: dibuja UN álbum o UNA canción (como tarjeta o como fila, según la vista).
@@ -221,7 +222,7 @@ function pintarMenu(){const m=$('.vmenu');if(m){m.innerHTML=htmlMenu();m.hidden=
 // montar: dibuja la barra de arriba (una sola vez al entrar a la pantalla).
 function montar(){
   el.innerHTML=`<div id="canc"><div class="barra">
-      <div class="buscar" role="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" type="search" placeholder="Buscar por nombre, etiqueta o letra" aria-label="Buscar canciones" value="${esc(busqueda)}" autocomplete="off"><button class="x" id="qx" aria-label="Borrar b\u00fasqueda" ${busqueda?'':'hidden'}>&times;</button></div>
+      <div class="buscar" role="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" type="text" inputmode="search" enterkeyhint="search" placeholder="Buscar por nombre, etiqueta o letra" aria-label="Buscar canciones" value="${esc(busqueda)}" autocomplete="off"><button class="x" id="qx" aria-label="Borrar b\u00fasqueda" ${busqueda?'':'hidden'}>&times;</button></div>
       <button id="na">${ic('pls',16)} Nuevo \u00e1lbum</button><button id="nc">${ic('pls',16)} Nueva canci\u00f3n</button><button class="sec" id="et">Etiquetas</button>
       <span class="vbox"><button class="sec" id="vista" aria-haspopup="true" aria-expanded="false">Vista &#9662;</button><div class="vmenu" hidden></div></span></div>
     <div id="contenido"></div><input type="file" id="ff" accept="image/*" hidden></div>`;
@@ -231,9 +232,12 @@ function montar(){
   raiz.addEventListener('change',alCambiarAlgo);
   raiz.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
+    const abierto=raiz.querySelector('details[open]');
+    if(abierto){cerrarMenus();abierto.querySelector('summary').focus();return}
     if(e.target.id==='q')borrarBusqueda();
     else if(menuAbierto){menuAbierto=false;pintarMenu();$('#vista').focus()}
   });
+  raiz.addEventListener('toggle',e=>{if(e.target.tagName==='DETAILS'&&e.target.open)cerrarMenus(e.target)},true);   // al abrir un menú ⋮ se cierran los demás
   raiz.addEventListener('dragstart',alEmpezarArrastre);
   raiz.addEventListener('dragover',alPasarArrastrando);
   raiz.addEventListener('drop',alSoltar);
@@ -244,6 +248,10 @@ function montar(){
 // ---------------------------------------------------------------------
 // 6. ACCIONES (qué pasa al hacer clic)
 // ---------------------------------------------------------------------
+// cerrarMenus(excepto): cierra los menús ⋮ abiertos (menos el indicado)
+const cerrarMenus=excepto=>document.querySelectorAll('#canc details[open]').forEach(d=>{if(d!==excepto)d.removeAttribute('open')});
+// Tocar en cualquier parte fuera de un menú ⋮ lo cierra
+document.addEventListener('click',e=>{if(!e.target.closest('#canc details'))cerrarMenus()},true);
 function borrarBusqueda(){
   busqueda='';const q=$('#q');if(q){q.value='';q.focus()}
   const x=$('#qx');if(x)x.hidden=true;
