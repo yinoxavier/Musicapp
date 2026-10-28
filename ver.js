@@ -142,7 +142,7 @@ function bloques(r){
 }
 
 // Estilo de los cuadros de tono y escala: fijos en la pantalla, abajo, sin zoom (viven FUERA de la hoja con zoom)
-const FIJO='position:fixed;zoom:1;left:8px;right:8px;top:auto;bottom:max(8px,env(safe-area-inset-bottom));width:auto;max-width:560px;margin:0 auto;max-height:80vh;overflow-y:auto;transform:none;z-index:60';
+const FIJO='position:fixed;zoom:1;left:8px;right:8px;top:auto;bottom:max(8px,env(safe-area-inset-bottom));width:auto;max-width:560px;margin:0 auto;max-height:80vh;overflow-y:auto;transform:none;z-index:60;touch-action:pan-y;overscroll-behavior:contain';
 function panel(c,clave){
   const d=local.tonos[clave]||0,act=tonoDe(c,d),orig=original(c),base=escrito(c);
   const pasos=[[-2,'−1'],[-1,'−½'],[1,'+½'],[2,'+1']].map(([n,t])=>`<button data-paso="${n}" data-clave="${clave}" aria-label="${n>0?'Subir':'Bajar'} ${Math.abs(n)===2?'un tono':'medio tono'}">${t}</button>`).join('');
@@ -241,7 +241,7 @@ const centro=t=>({x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/
 // Con acordes, en el celular: achica la hoja lo justo para que la línea más larga quepa sin partirse.
 // Si la persona ya hizo zoom con los dedos (local.manual), se respeta su zoom.
 function ajustar(){
-  const h=$('#vh');if(!h||local.manual)return;
+  const h=$('#vh');if(!h||local.manual||local.abierto)return;   // con un cuadro abierto el zoom se queda como está
   let z=1;
   if(local.acordes&&matchMedia('(max-width:760px)').matches){
     h.style.zoom=1;
@@ -255,8 +255,9 @@ addEventListener('resize',()=>{if(!el||!location.hash.startsWith('#ver/')||inner
 // Zoom con dos dedos (50% a 250%). El punto entre tus dedos se queda quieto: lo que lees no se mueve de lugar.
 function zoomTactil(){
   const h=$('#vh');if(!h)return;
-  h.ontouchstart=e=>{if(e.touches.length===2){distInicial=dist(e.touches);zoomInicial=local.zoom}};
+  h.ontouchstart=e=>{if(e.touches.length===2&&!local.abierto){distInicial=dist(e.touches);zoomInicial=local.zoom}};
   h.ontouchmove=e=>{
+    if(local.abierto){if(e.touches.length===2)e.preventDefault();return}   // con un cuadro abierto no hay zoom (ni el del navegador)
     if(e.touches.length!==2||distInicial<=0)return;
     e.preventDefault();
     const nuevo=Math.min(2.5,Math.max(.5,zoomInicial*dist(e.touches)/distInicial)),k=nuevo/local.zoom,m=centro(e.touches);
