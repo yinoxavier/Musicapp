@@ -141,22 +141,28 @@ function bloques(r){
   return MOM.filter(([k])=>m[k]).map(([k,n])=>({titulo:n,items:[{clave:'m:'+k+':'+m[k],cid:m[k]}]}));
 }
 
+// Estilo de los cuadros de tono y escala: fijos en la pantalla, abajo, sin zoom (viven FUERA de la hoja con zoom)
+const FIJO='position:fixed;zoom:1;left:8px;right:8px;top:auto;bottom:max(8px,env(safe-area-inset-bottom));width:auto;max-width:560px;margin:0 auto;max-height:80vh;overflow-y:auto;transform:none;z-index:60';
 function panel(c,clave){
   const d=local.tonos[clave]||0,act=tonoDe(c,d),orig=original(c),base=escrito(c);
   const pasos=[[-2,'−1'],[-1,'−½'],[1,'+½'],[2,'+1']].map(([n,t])=>`<button data-paso="${n}" data-clave="${clave}" aria-label="${n>0?'Subir':'Bajar'} ${Math.abs(n)===2?'un tono':'medio tono'}">${t}</button>`).join('');
   const lista=esMenor(orig||base)?MEN:MAY;
   const teclas=base?`<div class="keys2" role="group" aria-label="Elegir tono">${lista.map(k=>`<button data-ir="${k}" data-clave="${clave}" class="${k===act?'on':''}${k===orig?' or':''}" aria-pressed="${k===act}" ${k===orig?'title="Tono original"':''}>${k}</button>`).join('')}</div>`:'';
   const info=base?`<p class="info">Original: <b>${esc(orig)}</b> · Ahora: <b>${esc(act)}</b></p>`:`<p class="info">Esta canción no tiene tono definido. Los acordes se mueven por semitonos${d?` (ahora ${medio(d)})`:''}.</p>`;
-return `<div class="tpan" role="dialog" aria-label="Cambiar tono de ${esc(c.titulo)}" style="zoom:${1/(local.zoom||1)}"><div class="fila3">${pasos}</div>${info}${teclas}
+  return `<div class="tpan" style="${FIJO}" role="dialog" aria-label="Cambiar tono de ${esc(c.titulo)}"><div class="fila3">${pasos}</div>${info}${teclas}
     <div class="pie2"><button class="sec" data-orig data-clave="${clave}">Volver al original</button><button data-cerrar>Listo</button></div>
     <p class="nota">Solo cambia en tu pantalla.</p></div>`;
 }
 
-// Cuadro con la escala (equipo) de una sección. Solo en los eventos.
+// Botón de la escala (equipo) de una sección. Solo en los eventos. El cuadro se dibuja aparte (panelEquipo), fuera de la hoja.
 function botonEquipo(b){
   const t=textoEquipo(b.escala);if(!t)return '';
   const k='eq:'+b.id,abierto=local.abierto===k;
-  return `<span class="tdd"><button class="eq-b" data-eqb="${k}" aria-expanded="${abierto}" aria-label="Ver la escala de ${esc(b.titulo)}">${svg('<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',14)} Escala ${svg('<path d="M6 9l6 6 6-6"/>',12)}</button>${abierto?`<div class="tpan epan" role="dialog" aria-label="Escala de ${esc(b.titulo)}" style="zoom:${1/(local.zoom||1)}"><h3>${esc(t)}</h3>${htmlMiembros(b.escala)}<div class="pie2" style="justify-content:flex-end"><button data-cerrar>Listo</button></div></div>`:''}</span>`;
+  return `<span class="tdd"><button class="eq-b" data-eqb="${k}" aria-expanded="${abierto}" aria-label="Ver la escala de ${esc(b.titulo)}">${svg('<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',14)} Escala ${svg('<path d="M6 9l6 6 6-6"/>',12)}</button></span>`;
+}
+function panelEquipo(b){
+  const t=textoEquipo(b.escala);if(!t)return '';
+  return `<div class="tpan epan" style="${FIJO}" role="dialog" aria-label="Escala de ${esc(b.titulo)}"><h3>${esc(t)}</h3>${htmlMiembros(b.escala)}<div class="pie2" style="justify-content:flex-end"><button data-cerrar>Listo</button></div></div>`;
 }
 
 function pintar(){
@@ -171,14 +177,19 @@ function pintar(){
     const canciones=b.items.map(({clave,cid})=>{
       const c0=C.find(x=>x.id===cid);if(!c0)return '';
       const d=local.tonos[clave]||0,c=transpuesta(c0,d),abierto=local.abierto===clave;
-      const tono=t=>!transponible(c0)?'':`<span class="tdd"><button class="tono-b" data-tono="${clave}" aria-expanded="${abierto}" aria-label="Cambiar tono de ${esc(c0.titulo)}${t?', ahora '+esc(t):''}">${t?`Tono: ${esc(t)}`:'Tono'}${d?` <span class="dif">${medio(d)}</span>`:''} ${svg('<path d="M6 9l6 6 6-6"/>',13)}</button>${abierto?panel(c0,clave):''}</span>`;
+      const tono=t=>!transponible(c0)?'':`<span class="tdd"><button class="tono-b" data-tono="${clave}" aria-expanded="${abierto}" aria-label="Cambiar tono de ${esc(c0.titulo)}${t?', ahora '+esc(t):''}">${t?`Tono: ${esc(t)}`:'Tono'}${d?` <span class="dif">${medio(d)}</span>`:''} ${svg('<path d="M6 9l6 6 6-6"/>',13)}</button></span>`;
       return cancion(c,ac,{tono});
     }).join('');
     return canciones?`<div class="blk"><div class="lab labx"><span>${esc(b.titulo)}</span>${r.tipo==='evento'?botonEquipo(b):''}</div>${canciones}</div>`:'';
   }).join('')||'<div class="falta">Este repertorio aún no tiene canciones.</div>';
+  let cuadro='';   // el cuadro abierto (tono o escala), fuera de la hoja para que el zoom no lo afecte
+  if(local.abierto){
+    if(local.abierto.startsWith('eq:')){const b=bloques(r).find(x=>'eq:'+x.id===local.abierto);if(b)cuadro=panelEquipo(b)}
+    else{const c0=C.find(x=>x.id===local.abierto.split(':').pop());if(c0)cuadro=panel(c0,local.abierto)}
+  }
   el.innerHTML=`<div class="vbar${barraOculta?' oculta':''}"><div class="vt2"><h1>${esc(r.nombre||'Repertorio')}</h1>${r.fecha?`<small>${esc(fechaLarga(r.fecha))}</small>`:''}</div>
       <button class="vac2" data-acordes aria-pressed="${ac}"><span class="vchk2">${ac?svg('<path d="M20 6L9 17l-5-5"/>',12):''}</span>Acordes</button></div>
-        <div class="vzona"><div class="hojap${ac?' conac':''}" id="vh" style="zoom:${local.zoom}">${hoja}</div></div>`;
+        <div class="vzona"><div class="hojap${ac?' conac':''}" id="vh" style="zoom:${local.zoom}">${hoja}</div></div>${cuadro}`;
   ajustar();zoomTactil();
 }
 
