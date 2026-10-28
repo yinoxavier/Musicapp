@@ -147,7 +147,7 @@ function panel(c,clave){
   const lista=esMenor(orig||base)?MEN:MAY;
   const teclas=base?`<div class="keys2" role="group" aria-label="Elegir tono">${lista.map(k=>`<button data-ir="${k}" data-clave="${clave}" class="${k===act?'on':''}${k===orig?' or':''}" aria-pressed="${k===act}" ${k===orig?'title="Tono original"':''}>${k}</button>`).join('')}</div>`:'';
   const info=base?`<p class="info">Original: <b>${esc(orig)}</b> · Ahora: <b>${esc(act)}</b></p>`:`<p class="info">Esta canción no tiene tono definido. Los acordes se mueven por semitonos${d?` (ahora ${medio(d)})`:''}.</p>`;
-  return `<div class="tpan" role="dialog" aria-label="Cambiar tono de ${esc(c.titulo)}"><div class="fila3">${pasos}</div>${info}${teclas}
+return `<div class="tpan" role="dialog" aria-label="Cambiar tono de ${esc(c.titulo)}" style="zoom:${1/(local.zoom||1)}"><div class="fila3">${pasos}</div>${info}${teclas}
     <div class="pie2"><button class="sec" data-orig data-clave="${clave}">Volver al original</button><button data-cerrar>Listo</button></div>
     <p class="nota">Solo cambia en tu pantalla.</p></div>`;
 }
@@ -156,7 +156,7 @@ function panel(c,clave){
 function botonEquipo(b){
   const t=textoEquipo(b.escala);if(!t)return '';
   const k='eq:'+b.id,abierto=local.abierto===k;
-  return `<span class="tdd"><button class="eq-b" data-eqb="${k}" aria-expanded="${abierto}" aria-label="Ver la escala de ${esc(b.titulo)}">${svg('<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',14)} Escala ${svg('<path d="M6 9l6 6 6-6"/>',12)}</button>${abierto?`<div class="tpan epan" role="dialog" aria-label="Escala de ${esc(b.titulo)}"><h3>${esc(t)}</h3>${htmlMiembros(b.escala)}<div class="pie2" style="justify-content:flex-end"><button data-cerrar>Listo</button></div></div>`:''}</span>`;
+  return `<span class="tdd"><button class="eq-b" data-eqb="${k}" aria-expanded="${abierto}" aria-label="Ver la escala de ${esc(b.titulo)}">${svg('<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',14)} Escala ${svg('<path d="M6 9l6 6 6-6"/>',12)}</button>${abierto?`<div class="tpan epan" role="dialog" aria-label="Escala de ${esc(b.titulo)}" style="zoom:${1/(local.zoom||1)}"><h3>${esc(t)}</h3>${htmlMiembros(b.escala)}<div class="pie2" style="justify-content:flex-end"><button data-cerrar>Listo</button></div></div>`:''}</span>`;
 }
 
 function pintar(){
