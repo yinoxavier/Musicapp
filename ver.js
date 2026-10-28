@@ -46,6 +46,9 @@ st.textContent=`.modo-ver header,.modo-ver #nav{display:none!important}
 .vbar .vac2 .vchk2{width:18px;height:18px;border-radius:5px;border:2px solid currentColor;display:grid;place-items:center}
 .vzona{padding:18px 16px 0;overflow-x:auto}
 .vzona .hojap{margin:0 auto;min-height:0}
+.vzona .hojap{touch-action:pan-x pan-y}
+.vzona .hojap.conac .rl,.vzona .hojap.conac .rc{white-space:pre}
+@media(max-width:760px){.vzona .hojap.conac{max-width:none;width:max-content;min-width:100%;box-sizing:border-box;overflow:visible}}
 .tdd{position:relative;display:inline-block;margin-left:10px;vertical-align:middle}
 .tono-b{min-height:30px;padding:3px 10px;font:700 13px var(--fuente);background:var(--oro-claro);color:var(--azul);border:1px solid #E6CF9E;border-radius:999px;gap:5px}
 .tono-b:hover{filter:none;background:#F1DFB9}
@@ -80,14 +83,14 @@ document.head.append(st);
 // ---------- 2. DATOS (solo lectura) ----------
 let R=null,C=null,el=null,id=null;
 // Lo que cambia cada persona en su pantalla. Se pierde al recargar (a propósito).
-const local={acordes:null,tonos:{},abierto:null,zoom:1};
+const local={acordes:null,tonos:{},abierto:null,zoom:1,manual:false};
 let barraOculta=false;
 escuchar('repertorios',l=>{R=l;pintar()});
 alCambiarEquipos(()=>pintar());
 escuchar('canciones',l=>{C=l;pintar()});
 
 vistas.ver=(e,rid)=>{
-  if(id!==rid){id=rid;local.acordes=null;local.tonos={};local.abierto=null;local.zoom=1}
+  if(id!==rid){id=rid;local.acordes=null;local.tonos={};local.abierto=null;local.zoom=1;local.manual=false}
   el=e;el.onclick=clic;el.onkeydown=tecla;
   pintar();
 };
@@ -175,8 +178,8 @@ function pintar(){
   }).join('')||'<div class="falta">Este repertorio aún no tiene canciones.</div>';
   el.innerHTML=`<div class="vbar${barraOculta?' oculta':''}"><div class="vt2"><h1>${esc(r.nombre||'Repertorio')}</h1>${r.fecha?`<small>${esc(fechaLarga(r.fecha))}</small>`:''}</div>
       <button class="vac2" data-acordes aria-pressed="${ac}"><span class="vchk2">${ac?svg('<path d="M20 6L9 17l-5-5"/>',12):''}</span>Acordes</button></div>
-    <div class="vzona"><div class="hojap" id="vh" style="zoom:${local.zoom}">${hoja}</div></div>`;
-  zoomTactil();
+        <div class="vzona"><div class="hojap${ac?' conac':''}" id="vh" style="zoom:${local.zoom}">${hoja}</div></div>`;
+  ajustar();zoomTactil();
 }
 
 // ---------- 5. EVENTOS ----------
@@ -188,7 +191,7 @@ function clic(e){
   if(!b){if(local.abierto&&!e.target.closest('.tpan')){local.abierto=null;pintar()}return}
   if(b.dataset.eqb){const k=b.dataset.eqb;local.abierto=local.abierto===k?null:k;return repinta(`[data-eqb="${k}"]`)}
   const d=b.dataset,c=k=>C.find(x=>x.id===k.split(':').pop());
-  if(d.acordes!=null){local.acordes=!local.acordes;local.abierto=null;return repinta('[data-acordes]')}
+    if(d.acordes!=null){local.acordes=!local.acordes;local.manual=false;local.abierto=null;return repinta('[data-acordes]')}
   if(d.tono){local.abierto=local.abierto===d.tono?null:d.tono;return repinta(`[data-tono="${d.tono}"]`)}
   if(d.cerrar!=null){const k=local.abierto;local.abierto=null;return repinta(botonDe(k))}
   if(d.paso){local.tonos[d.clave]=mod((local.tonos[d.clave]||0)+ +d.paso);return repinta(`[data-paso="${d.paso}"][data-clave="${d.clave}"]`)}
@@ -220,11 +223,37 @@ addEventListener('scroll',()=>{
 },{passive:true});
 
 // Zoom con dos dedos sobre la hoja (idea de la antigua «Vista completa»). Va de 50% a 250%.
-let distInicial=0,zoomInicial=1;
+let distInicial=0,zoomInicial=1,anchoPrev=0;
 const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+const centro=t=>({x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/2});
+
+// Con acordes, en el celular: achica la hoja lo justo para que la línea más larga quepa sin partirse.
+// Si la persona ya hizo zoom con los dedos (local.manual), se respeta su zoom.
+function ajustar(){
+  const h=$('#vh');if(!h||local.manual)return;
+  let z=1;
+  if(local.acordes&&matchMedia('(max-width:760px)').matches){
+    h.style.zoom=1;
+    const p=h.parentElement,cs=getComputedStyle(p),disp=p.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),need=h.offsetWidth;
+    if(need>disp)z=Math.max(.5,disp/need);
+  }
+  local.zoom=z;h.style.zoom=z;
+}
+addEventListener('resize',()=>{if(!el||!location.hash.startsWith('#ver/')||innerWidth===anchoPrev)return;anchoPrev=innerWidth;ajustar()});   // al girar el celular
+
+// Zoom con dos dedos (50% a 250%). El punto entre tus dedos se queda quieto: lo que lees no se mueve de lugar.
 function zoomTactil(){
   const h=$('#vh');if(!h)return;
   h.ontouchstart=e=>{if(e.touches.length===2){distInicial=dist(e.touches);zoomInicial=local.zoom}};
-  h.ontouchmove=e=>{if(e.touches.length===2&&distInicial>0){e.preventDefault();local.zoom=Math.min(2.5,Math.max(.5,zoomInicial*dist(e.touches)/distInicial));h.style.zoom=local.zoom}};
+  h.ontouchmove=e=>{
+    if(e.touches.length!==2||distInicial<=0)return;
+    e.preventDefault();
+    const nuevo=Math.min(2.5,Math.max(.5,zoomInicial*dist(e.touches)/distInicial)),k=nuevo/local.zoom,m=centro(e.touches);
+    const a=h.getBoundingClientRect();
+    local.zoom=nuevo;local.manual=true;h.style.zoom=nuevo;
+    const b=h.getBoundingClientRect();
+    scrollBy(0,b.top+(m.y-a.top)*k-m.y);                                  // sube o baja la página
+    h.parentElement.scrollLeft+=b.left+(m.x-a.left)*k-m.x;                // y la mueve de lado si hace falta
+  };
   h.ontouchend=e=>{if(e.touches.length<2)distInicial=0};
 }

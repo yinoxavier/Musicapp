@@ -43,6 +43,7 @@ const SHF='<path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>';
 const PRN='<path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/>';
 const EXP='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>';
 const SHR='<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>';
+const CPY='<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>';
 
 const fechaCorta=f=>{if(!f)return'Sin fecha';const [y,m,d]=f.split('-');return d+'/'+m+'/'+y};
 
@@ -93,7 +94,7 @@ async function nuevo(f,tipo,nombre,evento){
 function abrir(id){rep=structuredClone(R.find(x=>x.id===id));pestana=rep.tipo==='evento'?'evento':'misa';rep.misa=rep.misa||{};rep.secciones=rep.secciones||[];editor()}
 function editor(){
   el.className='';
-  el.innerHTML=`<div class="rcols"><section class="c2" id="izq"></section><section><div class="ch2 noprint"><h2>Vista previa</h2><div class="mb"><button class="ic" data-share aria-label="Compartir" title="Compartir">${ico(SHR,18)}</button><button class="ic" data-print aria-label="Descargar PDF" title="Descargar PDF">${ico(EXP,18)}</button></div></div><div class="hojap" id="hoja"></div></section></div>`;
+  el.innerHTML=`<div class="rcols"><section class="c2" id="izq"></section><section><div class="ch2 noprint"><h2>Vista previa</h2><div class="mb"><button class="ic" data-share aria-label="Compartir" title="Compartir">${ico(SHR,18)}</button><button class="ic" data-copy aria-label="Copiar texto" title="Copiar todo el texto">${ico(CPY,18)}</button><button class="ic" data-print aria-label="Descargar PDF" title="Descargar PDF">${ico(EXP,18)}</button></div></div><div class="hojap" id="hoja"></div></section></div>`;
   pizq();pder();
 }
 function pizq(){
@@ -148,6 +149,23 @@ async function compartir(){
   aviso(copiado?'Enlace copiado. Ya puedes pegarlo en WhatsApp o en un correo.':'Se abri\u00f3 la ventana para compartir en una pesta\u00f1a nueva.');
 }
 
+// copiar: junta el texto de todas las canciones (sin acordes) y lo copia para pegarlo en WhatsApp, etc.
+// Formato de cada canción:  MOMENTO  /  Título - Álbum  /  letra
+const letraPlana=c=>(c.lineas?c.lineas.map(l=>l.r.map(x=>x.t).join('')):(c.letra||'').split('\n')).join('\n').trim();
+const bloqueTxt=(momento,id)=>{
+  const c=C.find(x=>x.id===id);if(!c)return '';
+  return (momento?momento.toUpperCase()+'\n':'')+c.titulo+(alb(c)?' - '+alb(c):'')+'\n'+letraPlana(c);
+};
+async function copiar(){
+  const partes=rep.tipo==='evento'
+    ?rep.secciones.flatMap(s=>s.canciones.map((id,i)=>bloqueTxt(i===0?s.nombre:'',id)))   // el nombre de la sección solo antes de su primera canción
+    :MOM.map(([id,n])=>rep.misa[id]?bloqueTxt(n,rep.misa[id]):'');
+  const txt=partes.filter(Boolean).join('\n\n');
+  if(!txt){aviso('A\u00fan no hay canciones para copiar.');return}
+  try{await navigator.clipboard.writeText(txt);aviso('Texto copiado. Ya puedes pegarlo en WhatsApp o donde quieras.')}
+  catch(e){aviso('No se pudo copiar el texto.')}
+}
+
 function imprimir(){
   const t=document.title;
   document.title=(rep.nombre||'Repertorio')+(rep.fecha?' '+rep.fecha:'');
@@ -156,7 +174,7 @@ function imprimir(){
 }
 
 function clic(e){
-  const b=e.target.closest('[data-nuevo],[data-open],[data-del],[data-back],[data-print],[data-share],[data-pest],[data-mesc],[data-mescq],[data-sesc],[data-sescq],[data-alet],[data-pick],[data-rnd],[data-rm],[data-sadd],[data-sdel],[data-spick],[data-srm]');
+  const b=e.target.closest('[data-nuevo],[data-open],[data-del],[data-back],[data-print],[data-copy],[data-share],[data-pest],[data-mesc],[data-mescq],[data-sesc],[data-sescq],[data-alet],[data-pick],[data-rnd],[data-rm],[data-sadd],[data-sdel],[data-spick],[data-srm]');
   if(!b)return;const d=b.dataset,ok=()=>{guarda();pizq();pder()};
   if(d.nuevo!=null)nuevo('',pestana);
   else if(d.pest){pestana=d.pest;try{localStorage.setItem('pestanaRep',pestana)}catch(err){}lista();const t=el.querySelector(`[data-pest="${pestana}"]`);if(t)t.focus()}
@@ -169,6 +187,7 @@ function clic(e){
   else if(d.back!=null){flush();rep=null;lista()}
   else if(d.print!=null)imprimir();
   else if(d.share!=null)compartir();
+  else if(d.copy!=null)copiar();
   else if(d.alet!=null){
     if(Object.keys(rep.misa).length&&!confirm('Esto reemplaza las canciones elegidas. \u00bfContinuar?'))return;
     const nm={};MOM.forEach(([id])=>{const x=azar(candMom(id),Object.values(nm));if(x)nm[id]=x});rep.misa=nm;ok();
