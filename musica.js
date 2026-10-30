@@ -9,6 +9,7 @@
 //   transTxt(texto,n) transpone todos los acordes de un texto
 //   MAY, MEN ........ listas de tonos mayores y menores
 //   tokensAcorde(texto) busca las «palabras» con forma de acorde (E, Em7, D/F#)
+//   tokensMarcado(texto) lo mismo pero devuelve TODAS las letras a pintar (notas, números, sus, M, | * % ( ) . #)
 //   nuevaRaiz(letra,acc,n) calcula la nota nueva al transponer una letra A-G
 //   transponerChars(letras,d,sost) transpone una línea (la usan el editor y la ventana Compartir)
 //   raizTono, esMenor, nombreTono  ayudas para nombrar el tono nuevo
@@ -40,6 +41,44 @@ export function tokensAcorde(texto){
   }
   return res;
 }
+// ---------- Botón «Ac» con todos sus complementos ----------
+// tokensMarcado(texto): como tokensAcorde, pero devuelve TODAS las letras que el botón «Ac» debe pintar (en rojo y negrita):
+//   la nota (A-G o Do, Re, Mi, Fa, Sol, La, Si, con su # o b), el bajo (A7/G) y todo lo que acompaña (números, sus, M, m, #, b9, ( ) | * % . + -).
+//   Solo las NOTAS se transponen; lo demás es fijo (lo decide transponerChars).
+// Una «palabra» (lo que va entre espacios) se acepta solo si TODA ella se entiende (así «Dios» o «Gloria» no cuentan).
+// Las notas pueden ir pegadas a símbolos u otras notas: «.D», «|A7M(#11)», «A|D», «A7M(#11)D».
+// Devuelve una lista de {ini, fin, raices, marcas}: raices = posición de cada nota, marcas = posición de cada letra a pintar.
+const RAIZ_RE=/(?:Sol|Si|La|Fa(?!dd)|Re|Mi|Do|[A-G])[#b]?/y;
+const SUFIJO_RE=/Maj|maj|min|dim|aug|sus|add|m|M/y;
+export function tokensMarcado(texto){
+  const res=[],re=/\S+/g;let m;
+  while((m=re.exec(texto))){
+    const w=m[0],marcas=[],raices=[];let i=0,acorde=false,ok=true;
+    while(i<w.length){
+      RAIZ_RE.lastIndex=i;const r=RAIZ_RE.exec(w);
+      if(r){                                             // una nota (con su # o b)
+        raices.push(m.index+i);
+        for(let q=0;q<r[0].length;q++)marcas.push(m.index+i+q);
+        i+=r[0].length;acorde=true;continue;
+      }
+      if(acorde){
+        SUFIJO_RE.lastIndex=i;const s=SUFIJO_RE.exec(w);
+        if(s){for(let q=0;q<s[0].length;q++)marcas.push(m.index+i+q);i+=s[0].length;continue}   // m, M, sus, add...
+      }
+      const ch=w[i];
+      let fijo=/[\d#|*%().]/.test(ch)                        // números y símbolos fijos
+        ||(acorde&&/[+\-]/.test(ch))                          // A+, C-
+        ||(acorde&&ch==='b'&&/\d/.test(w[i+1]||''))           // el b de (b9)
+        ||(acorde&&ch==='/'&&(RAIZ_RE.lastIndex=i+1,RAIZ_RE.test(w)));   // la barra del bajo, solo si lo que sigue es una nota
+      if(!fijo){ok=false;break}
+      marcas.push(m.index+i);
+      if(/[|*%.°]/.test(ch))acorde=false;                     // después de | * % . ya no se está dentro de un acorde
+      i++;
+    }
+    if(ok&&marcas.length)res.push({ini:m.index,fin:m.index+w.length,raices,marcas});
+  }
+  return res;
+}
 // NATURAL: el número de cada nota sin sostenidos ni bemoles (C=0, D=2, E=4...)
 export const NATURAL={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const SOST=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];     // nombres con sostenidos (para tonos como G, D, A, E, B)
@@ -57,6 +96,23 @@ export function nuevaRaiz(letra,acc,d,sostenidos){
   const usa=(sostenidos===null||sostenidos===undefined)?acc==='#':sostenidos;     // si da igual, respeta lo que ya escribiste
   return (usa?SOST:MAY)[((n%12)+12)%12];
 }
+// Notas en español (Do, Re, Mi, Fa, Sol, La, Si). Misma idea que nuevaRaiz pero con nombres en español.
+export const NATURAL_SOLFA={Do:0,Re:2,Mi:4,Fa:5,Sol:7,La:9,Si:11};
+const SOLFA_SOST=['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+const SOLFA_BEM=['Do','Reb','Re','Mib','Mi','Fa','Fa#','Sol','Lab','La','Sib','Si'];
+export function nuevaRaizSolfa(nombre,acc,d,sostenidos){
+  const n=NATURAL_SOLFA[nombre]+(acc==='#'?1:acc==='b'?-1:0)+d;
+  const usa=(sostenidos===null||sostenidos===undefined)?acc==='#':sostenidos;
+  return (usa?SOLFA_SOST:SOLFA_BEM)[((n%12)+12)%12];
+}
+// solfaEn(letras, j): si en la posición j empieza una nota en español hecha de letras marcadas, devuelve {nombre, largo}.
+// Exige que TODAS sus letras estén marcadas (así un «Do» suelto de la letra, con solo la D marcada, sigue siendo la nota D).
+function solfaEn(chars,j){
+  if(!chars[j].k)return null;
+  let s='';for(let q=j;q<chars.length&&q<j+5&&chars[q].k;q++)s+=chars[q].ch;
+  const r=/^(Sol|Si|La|Fa(?!dd)|Re|Mi|Do)/.exec(s);
+  return r?{nombre:r[1],largo:r[1].length}:null;
+}
 // transponerChars(letras, d, sostenidos): sube o baja d semitonos los acordes marcados (letras con k) de UNA línea.
 // «letras» es la línea como lista de {ch, ...formato}. Un # o b pegado a la letra cuenta como parte de la nota.
 // Si el nombre del acorde cambia de largo (E → Eb), ajusta los espacios para que los demás acordes no se muevan.
@@ -65,7 +121,15 @@ export function transponerChars(chars,d,sostenidos){
   const nuevo=[];let cambio=false,deuda=0;     // deuda: letras de más (+) o de menos (-) por el cambio de nombre
   for(let j=0;j<chars.length;j++){
     const c=chars[j];
-    if(c.k&&/[A-G]/.test(c.ch)){
+    const sol=solfaEn(chars,j);
+    if(sol){                                     // nota en español (Do, Re, Mi...): cambia las letras de la nota; lo demás no se toca
+      const sig=chars[j+sol.largo],acc=sig&&sig.k&&(sig.ch==='#'||sig.ch==='b')?sig.ch:'';
+      const nom=nuevaRaizSolfa(sol.nombre,acc,d,sostenidos);
+      for(const ch of nom)nuevo.push({...c,ch});
+      j+=sol.largo-1+(acc?1:0);
+      deuda+=nom.length-(sol.largo+acc.length);cambio=true;
+    }
+    else if(c.k&&/[A-G]/.test(c.ch)){
       const sig=chars[j+1],acc=sig&&(sig.ch==='#'||sig.ch==='b')?sig.ch:'';
       const nom=nuevaRaiz(c.ch,acc,d,sostenidos);
       nuevo.push({...c,ch:nom[0]});
