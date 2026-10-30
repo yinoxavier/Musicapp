@@ -28,7 +28,7 @@
 // =====================================================================
 import {$,esc,guardar,crear,modal} from "./base.js";
 import {E} from "./estado.js";
-import {ix,MAY,MEN,tokensAcorde,nuevaRaiz,usaSostenidos,transponerChars} from "./musica.js";
+import {ix,MAY,MEN,tokensAcorde,tokensMarcado,nuevaRaiz,usaSostenidos,transponerChars} from "./musica.js";
 import {FIJAS,PROPOR,cssFuente,OKC,plano,colorOk,CT,CH,svgI,UNDO,REDO,AL_L,AL_C,AL_R,AL_J,IND,OUTD,FIND,BRUSH,MARK} from "./formato.js";
 
 let ed=null;                 // la canción que se está editando (null = ningún editor abierto)
@@ -45,9 +45,10 @@ export function forzarCierre(){        // cierra el editor sin guardar (por ejem
 // ---------- ESTILOS del editor ----------
 const st=document.createElement('style');
 st.textContent=`#editor.ed{background:#D3D9E6;padding:0 16px 16px}
+html:has(#editor.ed),html:has(#editor.ed) body{overflow:hidden}
 .tb{position:sticky;top:0;z-index:3;background:#D3D9E6e8;backdrop-filter:blur(6px);margin:0 -16px;padding:14px 16px 8px;border-bottom:1px solid #c3cadb}
 .pg{background:linear-gradient(90deg,#f1f3f8 0,#f1f3f8 34px,#fff 34px);max-width:794px;min-height:1123px;margin:10px auto 40px;padding:48px 56px;box-shadow:0 2px 14px #0003;font-size:16px;line-height:var(--lh,1.35);font-family:Arial,"Helvetica Neue",Helvetica,sans-serif}
-@media(max-width:700px){.pg{padding:20px 14px;min-height:80vh}}
+@media(max-width:700px){.pg{padding:20px 14px 20px 44px;min-height:80vh}}
 .le{outline:none;min-height:400px}.ln{white-space:pre-wrap;min-height:1.35em}
 .ln [data-k]{font-weight:700;color:#b3261e}
 .fl{overflow-x:auto}.fl .ln{white-space:pre}
@@ -141,7 +142,7 @@ export function abrir(s,alCerrar){
   ed.albumId=ed.albumId||A[0]?.id;
   ed.lineas=structuredClone(s.lineas||(s.letra||'').split('\n').map(t=>({r:t?[{t}]:[]}))).map(l=>armar(l,aChars(l)));
   if(!ed.ac){ed.ac={};for(const l in ed.acordes){let f='';[...ed.acordes[l]].sort((a,b)=>a.i-b.i).forEach(a=>{f=f.padEnd(a.i,' ')+(f.length>a.i?' ':'')+a.c});ed.ac[l]=f}}
-  let modo='letra',verEt=false,eq='',rango=null,modoAcorde=false,pincel=null,pend=null,zoom=100,plegada=false,popAb=null,uc='#B3261E',uh='#FFF176',ancla=null,inicial='',base='';
+  let modo='letra',verEt=false,eq='',rango=null,rangoCol=null,modoAcorde=false,pincel=null,pend=null,zoom=100,plegada=false,popAb=null,uc='#B3261E',uh='#FFF176',ancla=null,inicial='',base='';
   // rango: la última selección hecha dentro de la hoja (con o sin texto). pend: formato «pendiente» para lo que escribas sin selección.
   const ov=document.createElement('div');ov.id='editor';ov.className='ed';document.body.append(ov);
   const nom=i=>T.find(t=>t.id===i)?.nombre||'';
@@ -162,7 +163,7 @@ export function abrir(s,alCerrar){
     const cs=[];let raizK=false;
     for(const x of r)for(const ch of x.t){
       const o={ch,...pick(x)};
-      if(o.k){if(/[A-G]/.test(ch)||(/[#b]/.test(ch)&&raizK)){delete o.b;if(o.c&&colorOk(o.c)===ROJO)delete o.c}else delete o.k}
+      if(o.k){delete o.b;if(o.c&&colorOk(o.c)===ROJO)delete o.c}
       raizK=!!o.k&&/[A-G]/.test(ch);cs.push(o);
     }
     return comp(cs);
@@ -567,22 +568,19 @@ export function abrir(s,alCerrar){
     const ls=lineasDe(),{a,b}=S,trabajo=[];
     for(let i=a.l;i<=b.l&&i<ls.length;i++){
       const chars=aChars(ls[i]),texto=chars.map(c=>c.ch).join(''),m=mapaCp(texto);
-      const ini=i===a.l?a.c:0,fi=i===b.l?b.c:chars.length,raices=new Set();
-      for(const t of tokensAcorde(texto))t.raices.forEach(r=>{
+      const ini=i===a.l?a.c:0,fi=i===b.l?b.c:chars.length,marcas=new Set();
+      for(const t of tokensMarcado(texto))t.marcas.forEach(r=>{      // todas las letras del acorde: nota, bajo, números, símbolos
         const j=m[r];
-        if(j>=ini&&j<fi){raices.add(j);if(r+1<t.fin&&/[#b]/.test(texto[r+1]))raices.add(m[r+1])}   // el # o b pegado a la nota también se marca
+        if(j>=ini&&j<fi)marcas.add(j);
       });
-      trabajo.push({i,chars,ini,fi,raices:[...raices]});
+      trabajo.push({i,chars,ini,fi,marcas:[...marcas]});
     }
-    const rc=trabajo.flatMap(w=>w.raices.map(j=>w.chars[j]));
+    const mc=trabajo.flatMap(w=>w.marcas.map(j=>w.chars[j]));
     const marcadas=trabajo.flatMap(w=>w.chars.slice(w.ini,w.fi)).filter(c=>c.k);
-    if(rc.some(c=>!c.k))rc.forEach(c=>{c.k=1});             // falta alguno: se marcan
-    else if(marcadas.length)marcadas.forEach(c=>{delete c.k;delete c.b;if(c.c&&colorOk(c.c)===ROJO)delete c.c});   // todos marcados: se desmarcan (y se limpia el rojo/negrita antiguos)
+    if(mc.some(c=>!c.k))mc.forEach(c=>{c.k=1});             // falta alguno: se marcan
+    else if(marcadas.length)marcadas.forEach(c=>{delete c.k;delete c.b;if(c.c&&colorOk(c.c)===ROJO)delete c.c});   // todos marcados: se desmarcan
     else return;                                            // no hay nada con forma de acorde
-    trabajo.forEach(w=>{
-      w.chars.forEach((c,j)=>{if(c.k&&/[#b]/.test(c.ch)&&!(j>0&&w.chars[j-1].k&&/[A-G]/.test(w.chars[j-1].ch)))delete c.k});   // un # o b que se quedó sin su nota deja de ser acorde
-      ls[w.i]=armar(ls[w.i],w.chars);
-    });
+    trabajo.forEach(w=>{ls[w.i]=armar(ls[w.i],w.chars)});
     ponerLineas(ls);repintaHoja();ponSel(a,b);              // se vuelve a seleccionar exactamente lo mismo
   }
   // marcarTecleado: lo que escribes recibe el formato pendiente (B/I/U/color/tamaño sin selección) y,
@@ -694,6 +692,12 @@ export function abrir(s,alCerrar){
   limpieza=()=>{document.removeEventListener('selectionchange',sc);clearTimeout(reloj)};
   const cerrar=()=>{limpieza();limpieza=null;ed=null;ov.remove();if(alCerrar)alCerrar()};
 
+  // «Más colores»: el selector del sistema le quita la selección al texto. Se guarda al abrirlo y se devuelve antes de pintar.
+  ov.addEventListener('pointerdown',e=>{if(!e.target.closest('.mas'))return;
+    const x=getSelection(),r=x.rangeCount?x.getRangeAt(0):null,le=$('#le',ov);
+    const v=r&&le.contains(r.commonAncestorContainer)&&!r.collapsed?r:rango;
+    rangoCol=v&&!v.collapsed&&le.contains(v.commonAncestorContainer)?v.cloneRange():null},true);
+  const restauraSel=()=>{if(!rangoCol)return;const x=getSelection();x.removeAllRanges();x.addRange(rangoCol);rango=rangoCol.cloneRange();rangoCol=null};
   ov.onmousedown=e=>{if(e.target.closest('.fb'))e.preventDefault()};   // los botones no le quitan la selección al texto
   ov.onfocusin=e=>{if(e.target.id==='eq'){verEt=true;const l=ov.querySelector('.lista');if(l)l.hidden=false}
     else if(e.target.id==='sz')e.target.select();
@@ -720,8 +724,8 @@ export function abrir(s,alCerrar){
   ov.onchange=e=>{const t=e.target;leer();
     if(t.id==='al')ed.albumId=t.value;
     else if(t.closest('.lista'))alterna(t.value,t.checked);
-    else if(t.id==='co'){uc=t.value;fmt('c',t.value);cierraPop()}
-    else if(t.id==='ch'){uh=t.value;fmt('h',t.value);cierraPop()}
+    else if(t.id==='co'){restauraSel();uc=t.value;fmt('c',t.value);cierraPop()}
+    else if(t.id==='ch'){restauraSel();uh=t.value;fmt('h',t.value);cierraPop()}
     else if(t.id==='sz'){const n=parseFloat(t.value);if(n>=6&&n<=120)fmt('s',n);mostrarTam(true)}
     else if(t.id==='lh'){ed.lh=+t.value;ov.querySelector('.pg').style.setProperty('--lh',ed.lh||1.35)}
     else if(t.id==='zm'){zoom=+t.value;ov.querySelector('.pg').style.zoom=zoom/100}
