@@ -67,7 +67,7 @@ export function tokensMarcado(texto){
       }
       const ch=w[i];
       let fijo=/[\d#|*%().]/.test(ch)                        // números y símbolos fijos
-        ||(acorde&&/[+\-]/.test(ch))                          // A+, C-
+        ||(acorde&&/[+\-°ø]/.test(ch))                        // A+, C-, B° (disminuido), Bø (semidisminuido)
         ||(acorde&&ch==='b'&&/\d/.test(w[i+1]||''))           // el b de (b9)
         ||(acorde&&ch==='/'&&(RAIZ_RE.lastIndex=i+1,RAIZ_RE.test(w)));   // la barra del bajo, solo si lo que sigue es una nota
       if(!fijo){ok=false;break}
